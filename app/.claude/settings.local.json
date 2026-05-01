@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/KOLD/Documents/2026/gestion de proyectos/persona/app/**)",
+      "Bash(python /tmp/create_pdf.py)",
+      "Bash(pip install:*)"
+    ]
+  }
+}

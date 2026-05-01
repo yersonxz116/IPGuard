@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./venv/Scripts/python.exe -m pip install -r requirements.txt)",
+      "Bash(./venv/Scripts/python.exe --version)",
+      "Bash(./venv/Scripts/python.exe -m pip install torch torchvision pillow tqdm \"flask>=3.0\" opencv-python)",
+      "Bash(\"C:\\\\Users\\\\KOLD\\\\Documents\\\\2026\\\\diplomado\\\\persona\\\\venv\\\\Scripts\\\\pip.exe\" install:*)",
+      "Bash(\"C:\\\\Users\\\\KOLD\\\\Documents\\\\2026\\\\diplomado\\\\persona\\\\venv\\\\Scripts\\\\python.exe\" -m pip install ollama)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"security surveillance dashboard landing dark\" --design-system -p \"IPGuard\" -f markdown)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"animation accessibility hover\" --domain ux)",
+      "Bash(git config:*)"
+    ]
+  }
+}

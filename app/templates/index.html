@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPGuard - Sistema de Detección de Seguridad</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@latest/devicon.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Video Background -->
+    <video class="video-bg" muted playsinline loop currentTime="3" id="heroVideo">
+        <source src="{{ url_for('static', filename='assets/video/city.mp4') }}" type="video/mp4">
+    </video>
+    <div class="video-overlay"></div>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <img src="{{ url_for('static', filename='assets/image/logo.jpeg') }}" alt="IPGuard Logo">
+            <div class="logo-text">IP<span>Guard</span></div>
+        </div>
+        <ul class="navbar-links">
+            <li><a href="#inicio">Inicio</a></li>
+            <li><a href="#tecnologias">Tecnologías</a></li>
+            <li><a href="#mision-vision">Misión y Visión</a></li>
+            <li><a href="#objetivos">Objetivos</a></li>
+        </ul>
+        <a href="{{ url_for('login') }}" class="btn btn-access">
+            <i class="fas fa-shield-alt"></i>
+            <span>Acceder</span>
+            <i class="fas fa-circle online-indicator"></i>
+        </a>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="inicio" class="hero">
+        <div class="hero-content">
+            <h1>IPGuard</h1>
+            <p class="hero-subtitle">Detección de personas en cámaras IP mediante inteligencia artificial</p>
+            <p class="hero-desc">
+                Monitoreo en tiempo real con notificaciones automáticas vía WhatsApp
+                para proteger lo que más te importa.
+            </p>
+            <div class="hero-buttons">
+                <a href="#tecnologias" class="btn btn-primary">Explorar</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline">Iniciar Sesión</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technologies Section -->
+    <section id="tecnologias" class="section">
+        <div class="section-title">
+            <h2>Tecnologías Utilizadas</h2>
+            <div class="underline"></div>
+        </div>
+
+        <!-- Backend Technologies -->
+        <h3 class="tech-category-title">Backend</h3>
+        <div class="logo-carousel">
+            <div class="logo-carousel-track">
+                <div class="tech-card">
+                    <i class="devicon-flask-original colored"></i>
+                    <h3>Flask</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-mysql-original colored"></i>
+                    <h3>MySQL</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-pytorch-original colored"></i>
+                    <h3>PyTorch</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-opencv-plain colored"></i>
+                    <h3>OpenCV</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-arduino-plain colored"></i>
+                    <h3>ESP32</h3>
+                </div>
+                <!-- Duplicated 3x for seamless infinite scroll -->
+                <div class="tech-card">
+                    <i class="devicon-flask-original colored"></i>
+                    <h3>Flask</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-mysql-original colored"></i>
+                    <h3>MySQL</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-pytorch-original colored"></i>
+                    <h3>PyTorch</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-opencv-plain colored"></i>
+                    <h3>OpenCV</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-arduino-plain colored"></i>
+                    <h3>ESP32</h3>
+                </div>
+                <!-- 2nd duplicate set -->
+                <div class="tech-card">
+                    <i class="devicon-flask-original colored"></i>
+                    <h3>Flask</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-mysql-original colored"></i>
+                    <h3>MySQL</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-pytorch-original colored"></i>
+                    <h3>PyTorch</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-opencv-plain colored"></i>
+                    <h3>OpenCV</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-arduino-plain colored"></i>
+                    <h3>ESP32</h3>
+                </div>
+                <!-- 3rd duplicate set -->
+                <div class="tech-card">
+                    <i class="devicon-flask-original colored"></i>
+                    <h3>Flask</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-mysql-original colored"></i>
+                    <h3>MySQL</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-pytorch-original colored"></i>
+                    <h3>PyTorch</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-opencv-plain colored"></i>
+                    <h3>OpenCV</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-arduino-plain colored"></i>
+                    <h3>ESP32</h3>
+                </div>
+                <!-- 4th duplicate set -->
+                <div class="tech-card">
+                    <i class="devicon-flask-original colored"></i>
+                    <h3>Flask</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-mysql-original colored"></i>
+                    <h3>MySQL</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-pytorch-original colored"></i>
+                    <h3>PyTorch</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-opencv-plain colored"></i>
+                    <h3>OpenCV</h3>
+                </div>
+                <div class="tech-card">
+                    <i class="devicon-arduino-plain colored"></i>
+                    <h3>ESP32</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Frontend Technologies -->
+        <h3 class="tech-category-title">Frontend</h3>
+        <div class="tech-grid-frontend">
+            <div class="tech-card">
+                <div class="tech-icon">
+                    <i class="devicon-html5-plain colored"></i>
+                </div>
+                <h3>HTML5 y CSS3</h3>
+                <p>Tecnologías frontend para crear una interfaz de usuario responsive, moderna y atractiva visualmente.</p>
+            </div>
+            <div class="tech-card">
+                <div class="tech-icon">
+                    <i class="devicon-javascript-plain colored"></i>
+                </div>
+                <h3>JavaScript</h3>
+                <p>Lenguaje de programación para crear interactividad y lógica en el lado del cliente de la aplicación web.</p>
+            </div>
+            <div class="tech-card">
+                <div class="tech-icon">
+                    <i class="devicon-css3-plain colored"></i>
+                </div>
+                <h3>CSS3</h3>
+                <p>Hojas de estilo en cascada para diseñar y dar formato visual a las páginas web.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mission Vision Section -->
+    <section id="mision-vision" class="section">
+        <div class="section-title">
+            <h2>Misión y Visión</h2>
+            <div class="underline"></div>
+        </div>
+        <div class="mv-container">
+            <div class="mv-card">
+                <h3><i class="fas fa-rocket"></i> Misión</h3>
+                <p>
+                    Proporcionar una solución de seguridad accesible y eficiente que permita a los usuarios
+                    monitorear sus espacios en tiempo real mediante cámaras IP, utilizando inteligencia artificial
+                    para la detección automática de personas y notificaciones instantáneas que garanticen
+                    la protección del hogar y sus seres queridos.
+                </p>
+            </div>
+            <div class="mv-card">
+                <h3><i class="fas fa-compass"></i> Visión</h3>
+                <p>
+                    Convertirse en una referencia nacional en sistemas de vigilancia inteligente domestica,
+                    innovando continuamente en la detección de objetos y el análisis de video mediante
+                    redes neuronales profundas, democratizando el acceso a tecnología de seguridad
+                    avanzada para todos los hogares.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Objectives Section -->
+    <section id="objetivos" class="section">
+        <div class="section-title">
+            <h2>Objetivos</h2>
+            <div class="underline"></div>
+        </div>
+        <div class="obj-container">
+            <div class="obj-general">
+                <h3><i class="fas fa-crosshairs"></i> Objetivo General</h3>
+                <p>
+                    Desarrollar un sistema de monitoreo y detección de personas en tiempo real
+                    para cámaras IP, utilizando una red neuronal convolucional basada en yolo11s
+                    con arquitectura Faster R-CNN, implementada mediante un servidor Flask con interfaz
+                    web intuitiva y notificaciones automáticas de WhatsApp.
+                </p>
+            </div>
+            <div class="obj-specific">
+                <h3><i class="fas fa-list-check"></i> Objetivos Específicos</h3>
+                <ul class="obj-list">
+                    <li>Diseñar y entrenar un modelo de detección de objetos utilizando transfer learning con yolo11s como backbone.</li>
+                    <li>Implementar un servidor Flask con API REST para la comunicación entre el modelo de IA y la interfaz web.</li>
+                    <li>Desarrollar una interfaz web responsive que permita gestionar cámaras IP, visualizar detecciones y configurar horarios de monitoreo.</li>
+                    <li>Integrar un sistema de notificaciones automáticas mediante WhatsApp que alerte al usuario cuando se detecte una persona.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <img src="{{ url_for('static', filename='assets/image/logo.jpeg') }}" alt="IPGuard Logo">
+                <div>
+                    <h3>IPGuard</h3>
+                    <p>Sistema de Detección de Seguridad</p>
+                </div>
+            </div>
+            <div class="footer-links">
+                <a href="#inicio">Inicio</a>
+                <a href="#tecnologias">Tecnologías</a>
+                <a href="#mision-vision">Misión y Visión</a>
+                <a href="#objetivos">Objetivos</a>
+            </div>
+            <div class="footer-social">
+                <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                <a href="#" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>IPGuard © 2026 - <span>Sistema de Detección de Seguridad</span></p>
+            <p>Desarrollado con Flask, PyTorch y OpenCV</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

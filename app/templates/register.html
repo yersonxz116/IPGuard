@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPGuard - Crear cuenta</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body class="auth-page auth-register">
+    <video class="video-bg auth-video" muted playsinline loop autoplay>
+        <source src="{{ url_for('static', filename='assets/video/city.mp4') }}" type="video/mp4">
+    </video>
+    <div class="auth-overlay"></div>
+
+    <main class="auth-shell auth-shell--wide">
+        <section class="auth-card register-card" aria-label="Formulario de registro">
+            <a href="{{ url_for('index') }}" class="auth-brand" aria-label="Volver al inicio">
+                <img src="{{ url_for('static', filename='assets/image/logo.jpeg') }}" alt="IPGuard Logo">
+                <span>IP<span>Guard</span></span>
+            </a>
+
+            <div class="auth-art">
+                <img src="{{ url_for('static', filename='assets/image/register-auth.png') }}" alt="Registro de acceso IPGuard">
+            </div>
+
+            <div class="auth-card-header">
+                <h1>Crear cuenta</h1>
+                <p>Registra un nuevo acceso al panel.</p>
+            </div>
+
+            <form class="auth-form" action="#" method="post">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="full_name">Nombre</label>
+                        <input
+                            type="text"
+                            id="full_name"
+                            name="full_name"
+                            placeholder="Nombre completo"
+                            autocomplete="name"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="username">Usuario</label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            placeholder="usuario"
+                            autocomplete="username"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Correo</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="correo@ejemplo.com"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="password">Contrasena</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Minimo 8 caracteres"
+                            autocomplete="new-password"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm_password">Confirmar</label>
+                        <input
+                            type="password"
+                            id="confirm_password"
+                            name="confirm_password"
+                            placeholder="Repite la contrasena"
+                            autocomplete="new-password"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-login">
+                    Crear cuenta
+                </button>
+            </form>
+
+            <div class="auth-switch">
+                <span>Ya tienes cuenta?</span>
+                <a href="{{ url_for('login') }}">Iniciar sesion</a>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

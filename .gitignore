@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Flask
+instance/
+.webassets-cache/
+flask_session/
+
+# Environment variables and local secrets
+.env
+.env.*
+*.env
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+*.cache
+
+# Local datasets and generated assets
+person/
+data/
+models/
+*.pt
+*.pth
+*.onnx
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project-local tokens or sessions
+whatsapp_token*
+session_*
