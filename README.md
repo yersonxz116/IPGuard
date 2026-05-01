@@ -1,15 +1,14 @@
 # IPGuard
 
-Aplicacion web en Flask para monitoreo y control de un sistema de deteccion de personas en camaras IP, con interfaz de acceso, dashboard y asistente IA integrado con Ollama.
+Aplicacion web en Flask para acceso, monitoreo y gestion de un sistema de camaras IP.
 
 ## Caracteristicas
 
-- Landing page informativa del proyecto.
-- Pantallas de `login` y `register` con interfaz visual personalizada.
+- Pagina principal informativa del proyecto.
+- Pantallas de `login` y `register` con interfaz personalizada.
 - Dashboard protegido por sesion.
 - Endpoint de autenticacion mock para pruebas locales.
-- Endpoint de chat IA conectado a Ollama.
-- Assets estaticos para UI, imagenes y video de fondo.
+- Assets estaticos para interfaz, imagenes y video de fondo.
 
 ## Estructura del proyecto
 
@@ -31,9 +30,6 @@ persona/
 
 - Python 3.10 o superior
 - `pip`
-- Ollama instalado localmente
-- Modelo disponible en Ollama:
-  - `gemma3:1b`
 
 ## Instalacion
 
@@ -61,9 +57,7 @@ http://127.0.0.1:5000
 - `/login` : acceso al sistema
 - `/register` : registro visual de usuario
 - `/dashboard` : vista protegida
-- `/ia` : asistente IA protegido
 - `/api/login` : autenticacion mock
-- `/api/ia/chat` : chat con Ollama
 
 ## Credenciales de prueba actuales
 
@@ -74,13 +68,10 @@ usuario: admin
 contrasena: admin123
 ```
 
-Esto esta definido en [app/__init__.py](</C:/Users/KOLD/Documents/2026/gestion de proyectos/persona/app/__init__.py>).
-
 ## Notas de desarrollo
 
 - `register` actualmente es una vista visual; aun no tiene logica de registro real.
-- El proyecto usa sesion Flask en memoria/archivo local.
-- El endpoint `/api/ia/chat` requiere que Ollama este activo y que el modelo configurado exista localmente.
+- El proyecto usa sesion Flask local.
 
 ## Archivos ignorados por Git
 
@@ -92,11 +83,10 @@ El `.gitignore` excluye:
 - dataset `person/`
 - modelos y archivos generados
 - caches, logs y archivos temporales
+- archivos locales de asistentes y tooling
 
 ## Sugerencias antes de subir a GitHub
 
 1. Reemplazar las credenciales mock por autenticacion real.
 2. Mover secretos y configuraciones sensibles a variables de entorno.
 3. Agregar pruebas con `pytest`.
-4. Documentar despliegue y dependencias de Ollama si el repositorio sera compartido.
-# cipherLead

@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 import secrets
-import ollama
 
 
 def create_app():
@@ -100,44 +99,6 @@ def create_app():
             return redirect(url_for('login'))
 
         return render_template('index.html')
-
-    @app.route('/ia')
-    def ia():
-        """Pagina del asistente IA (protegida)"""
-        if 'user_id' not in session:
-            return redirect(url_for('login'))
-
-        return render_template('ia.html')
-
-    @app.route('/api/ia/chat', methods=['POST'])
-    def api_ia_chat():
-        """Endpoint para procesar mensajes con Ollama (sin sesion persistente)"""
-        if 'user_id' not in session:
-            return jsonify({'success': False, 'message': 'No autenticado'}), 401
-
-        data = request.get_json()
-        if not data or not data.get('message'):
-            return jsonify({'success': False, 'message': 'Mensaje no proporcionado'}), 400
-
-        try:
-            response = ollama.chat(
-                model='gemma3:1b',
-                messages=[
-                    {
-                        'role': 'user',
-                        'content': data['message']
-                    }
-                ]
-            )
-            return jsonify({
-                'success': True,
-                'response': response['message']['content']
-            })
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'message': f'Error al procesar: {str(e)}'
-            }), 500
 
     # Headers de cache para archivos estaticos (videos, imagenes, CSS, JS)
     @app.after_request

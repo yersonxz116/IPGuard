@@ -43,6 +43,13 @@ models/
 *.swp
 *.swo
 
+# Local assistant/tooling files
+.claude/
+.codex/
+app/.claude/
+AGENTS.md
+CLAUDE.md
+
 # OS files
 .DS_Store
 Thumbs.db
@@ -50,10 +57,3 @@ Thumbs.db
 # Project-local tokens or sessions
 whatsapp_token*
 session_*
-
-.claude
-.claude/
-claude
-
-claude.md
-
