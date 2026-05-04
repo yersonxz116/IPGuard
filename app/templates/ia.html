@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPGuard IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ia.css') }}">
+</head>
+<body class="ia-page">
+    <main class="ia-shell">
+        <section class="chat-console">
+            <header class="console-topbar">
+                <a href="{{ url_for('index') }}" class="brand-link" aria-label="Volver al inicio">
+                    <span class="brand-mark">IP</span>
+                    <span>
+                        <strong>IPGuard IA</strong>
+                        <small>{{ model_name }}</small>
+                    </span>
+                </a>
+
+                <div class="status-pill">
+                    <i class="fas fa-circle"></i>
+                    <span id="modelStatus">Listo</span>
+                </div>
+            </header>
+
+            <div class="console-grid">
+                <aside class="context-panel" aria-label="Panel de contexto">
+                    <p class="eyebrow">Modo rapido</p>
+                    <h1>Centro de consultas IA</h1>
+                    <p class="panel-copy">
+                        Optimizado con modelo 1B para responder mas rapido y mantener cada salida en dos frases.
+                    </p>
+
+                    <div class="quick-prompts">
+                        <button type="button" data-prompt="Resume el estado ideal de un sistema de camaras IP.">
+                            <i class="fas fa-video"></i>
+                            Estado de camaras
+                        </button>
+                        <button type="button" data-prompt="Dame una recomendacion breve para mejorar alertas de deteccion.">
+                            <i class="fas fa-bell"></i>
+                            Mejorar alertas
+                        </button>
+                        <button type="button" data-prompt="Explica en dos frases que revisar si una camara no responde.">
+                            <i class="fas fa-screwdriver-wrench"></i>
+                            Diagnostico rapido
+                        </button>
+                    </div>
+
+                    <div class="model-card">
+                        <span>Modelo activo</span>
+                        <strong>{{ model_name }}</strong>
+                    </div>
+                </aside>
+
+                <section class="chat-card" aria-label="Chat con inteligencia artificial">
+                    <div class="chat-toolbar">
+                        <div>
+                            <p class="eyebrow">Consulta IA</p>
+                            <h2>Asistente operativo</h2>
+                        </div>
+
+                        <button type="button" class="toolbar-button" id="clearChat" title="Reiniciar chat">
+                            <i class="fas fa-rotate-left"></i>
+                            <span>Reiniciar</span>
+                        </button>
+                    </div>
+
+                    <div class="chat-status" id="chatStatus">Listo para responder en maximo dos frases.</div>
+
+                    <div class="chat-messages" id="chatMessages">
+                        <article class="message message-assistant">
+                            <div class="message-badge">IA</div>
+                            <div class="message-body">
+                                <p class="message-role">Asistente</p>
+                                <p>Estoy usando {{ model_name }} para responder mas rapido. Mantendre cada respuesta en maximo dos frases.</p>
+                            </div>
+                        </article>
+                    </div>
+
+                    <form class="composer" id="chatForm">
+                        <div class="composer-field">
+                            <label class="sr-only" for="messageInput">Mensaje</label>
+                            <textarea
+                                id="messageInput"
+                                name="message"
+                                rows="1"
+                                maxlength="4000"
+                                placeholder="Escribe una consulta breve..."
+                                required
+                            ></textarea>
+                            <div class="composer-hint">Enter envia. Shift + Enter agrega una linea.</div>
+                        </div>
+
+                        <button type="submit" class="send-button" id="sendButton" title="Enviar mensaje">
+                            <span>Enviar</span>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        window.IA_CHAT_CONFIG = {
+            endpoint: "{{ url_for('api_ia_chat') }}",
+            model: "{{ model_name }}"
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/ia.js') }}"></script>
+</body>
+</html>

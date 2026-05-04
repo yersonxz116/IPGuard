@@ -4,6 +4,12 @@ __pycache__/
 *$py.class
 *.so
 .Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 
 # Virtual environments
 venv/
@@ -15,6 +21,8 @@ ENV/
 instance/
 .webassets-cache/
 flask_session/
+*.db
+*.sqlite3
 
 # Environment variables and local secrets
 .env
@@ -36,6 +44,8 @@ models/
 *.pt
 *.pth
 *.onnx
+*.ckpt
+*.safetensors
 
 # IDE and editor files
 .vscode/

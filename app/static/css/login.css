@@ -291,6 +291,12 @@ body.auth-page .alert-error {
     background: rgba(255, 141, 132, 0.08);
 }
 
+body.auth-page .alert-success {
+    color: #dff7e7;
+    border: 1px solid rgba(134, 216, 166, 0.2);
+    background: rgba(134, 216, 166, 0.1);
+}
+
 body.auth-page .btn-login {
     width: 100%;
     min-height: 46px;
