@@ -9,8 +9,10 @@ Aplicacion web en Flask para gestion de acceso, autenticacion de usuarios y cons
 - Login por `username` o `email`.
 - Passwords hasheadas con Werkzeug.
 - Migraciones con Flask-Migrate y Alembic.
+- Dashboard autenticado para registrar y visualizar camaras IP.
 - Vista `/ia` conectada a Ollama.
 - Chat IA responsive con scroll interno solo en el historial de mensajes.
+- Compatible con ESP32-CAM que publica imagenes por `http://IP/foto`.
 
 ## Stack
 
@@ -182,6 +184,8 @@ ollama pull gemma3:1b
 - `/login` : acceso
 - `/register` : registro de usuario
 - `/dashboard` : vista protegida por sesion
+- `/api/cameras` : registrar camara IP
+- `/api/cameras/<id>` : eliminar camara IP
 - `/ia` : chat IA publico
 - `/api/login` : autenticacion JSON
 - `/api/ia/chat` : consulta al modelo de Ollama
@@ -194,8 +198,9 @@ Despues de levantar el proyecto, valida:
 2. `/register` crea usuarios en MySQL.
 3. `/login` permite entrar con `username` o `email`.
 4. `/dashboard` redirige a login si no hay sesion.
-5. `/ia` abre el chat.
-6. `/api/ia/chat` responde si Ollama esta activo.
+5. `/dashboard` permite agregar una camara y mostrar su stream.
+6. `/ia` abre el chat.
+7. `/api/ia/chat` responde si Ollama esta activo.
 
 ## Notas tecnicas
 

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPGuard - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-bg"></div>
+
+    <main class="dashboard-shell">
+        <header class="dashboard-topbar">
+            <div class="dashboard-brand-block">
+                <a href="{{ url_for('index') }}" class="dashboard-brand" aria-label="Volver al inicio">
+                    <span class="dashboard-brand-mark">IP</span>
+                    <span class="dashboard-brand-text">
+                        <strong>IPGuard</strong>
+                        <small>Centro de monitoreo</small>
+                    </span>
+                </a>
+                <div class="dashboard-title-copy">
+                    <p class="eyebrow">Dashboard</p>
+                    <h1>Tus camaras IP en un solo panel</h1>
+                </div>
+            </div>
+
+            <div class="dashboard-userbar">
+                <div class="dashboard-user-pill">
+                    <span class="dashboard-user-label">Sesión</span>
+                    <strong>{{ user.full_name }}</strong>
+                </div>
+                <a href="{{ url_for('ia_chat') }}" class="icon-action" title="Abrir chat IA" aria-label="Abrir chat IA">
+                    <i class="fas fa-sparkles"></i>
+                </a>
+                <a href="{{ url_for('logout') }}" class="icon-action icon-action--danger" title="Cerrar sesion" aria-label="Cerrar sesion">
+                    <i class="fas fa-right-from-bracket"></i>
+                </a>
+            </div>
+        </header>
+
+        <section class="dashboard-summary" aria-label="Resumen general">
+            <article class="summary-tile">
+                <span>Camaras registradas</span>
+                <strong id="cameraCount">{{ total_cameras }}</strong>
+            </article>
+            <article class="summary-tile">
+                <span>Streams activos</span>
+                <strong id="activeCameraCount">{{ active_cameras }}</strong>
+            </article>
+            <article class="summary-tile summary-tile--wide">
+                <span>Recomendacion</span>
+                <p>Puedes usar ESP32-CAM o apps como DroidCam. Si registras solo `http://IP`, el dashboard intentara `http://IP/stream`; si registras una URL como `http://IP:4747/video`, la tratara como stream en vivo.</p>
+            </article>
+        </section>
+
+        <section class="dashboard-grid">
+            <aside class="camera-sidebar" aria-label="Agregar camara">
+                <div class="section-heading">
+                    <p class="eyebrow">Nueva camara</p>
+                    <h2>Registrar stream</h2>
+                </div>
+
+                <form id="cameraForm" class="camera-form" novalidate>
+                    <div class="field-group">
+                        <label for="cameraName">Nombre</label>
+                        <input type="text" id="cameraName" name="name" placeholder="Patio trasero" maxlength="120" required>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="cameraLocation">Ubicacion</label>
+                        <input type="text" id="cameraLocation" name="location" placeholder="Entrada principal">
+                    </div>
+
+                    <div class="field-group">
+                        <label for="cameraStreamUrl">URL de la camara o endpoint</label>
+                        <input
+                            type="text"
+                            id="cameraStreamUrl"
+                            name="stream_url"
+                            placeholder="http://192.168.1.40 o http://192.168.1.40/stream"
+                            required
+                        >
+                    </div>
+
+                    <div class="field-group">
+                        <label for="cameraSnapshotUrl">URL de captura opcional</label>
+                        <input
+                            type="text"
+                            id="cameraSnapshotUrl"
+                            name="snapshot_url"
+                            placeholder="http://192.168.1.40/capture"
+                        >
+                    </div>
+
+                    <div class="form-note">
+                        <i class="fas fa-circle-info"></i>
+                        <span>Si registras solo la IP, IPGuard intentara usar `/stream`. Tambien puedes pegar streams directos como `/video`, `/mjpeg` o endpoints similares.</span>
+                    </div>
+
+                    <div class="form-alert" id="cameraFormAlert" hidden></div>
+
+                    <button type="submit" class="primary-button" id="cameraSubmitButton">
+                        <span class="button-label">Agregar camara</span>
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </form>
+            </aside>
+
+            <section class="camera-content" aria-label="Panel de camaras">
+                <div class="section-heading section-heading--row">
+                    <div>
+                        <p class="eyebrow">Monitoreo</p>
+                        <h2>Vista en vivo</h2>
+                    </div>
+                    <button type="button" class="ghost-button" id="refreshAllButton">
+                        <i class="fas fa-rotate"></i>
+                        <span>Recargar streams</span>
+                    </button>
+                </div>
+
+                <div class="camera-empty{% if cameras %} is-hidden{% endif %}" id="cameraEmptyState">
+                    <div class="camera-empty-icon">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <h3>No has agregado camaras aun</h3>
+                    <p>Registra la IP o la URL del stream de tu ESP32-CAM para verla directamente desde este panel.</p>
+                </div>
+
+                <div class="camera-grid" id="cameraGrid">
+                    {% for camera in cameras %}
+                    <article
+                        class="camera-card"
+                        data-camera-id="{{ camera.id }}"
+                        data-detection-available="{{ 'true' if camera.detection_enabled else 'false' }}"
+                        data-detection-active="{{ 'true' if camera.detection_enabled else 'false' }}"
+                    >
+                        <div class="camera-card-header">
+                            <div>
+                                <h3>{{ camera.name }}</h3>
+                                <p>{{ camera.location or 'Sin ubicacion registrada' }}</p>
+                            </div>
+                            <span class="camera-status">En vivo</span>
+                        </div>
+
+                        <div class="camera-stream-frame" data-preview-mode="{{ camera.preview_mode }}">
+                            <img
+                                class="camera-stream"
+                                src="{{ camera.detection_stream_url or camera.preview_url }}"
+                                data-primary-src="{{ camera.detection_stream_url or camera.preview_url }}"
+                                data-fallback-src="{{ camera.preview_url }}"
+                                alt="Stream de {{ camera.name }}"
+                                loading="eager"
+                                referrerpolicy="no-referrer"
+                            >
+                            <div class="camera-stream-overlay" hidden>
+                                <i class="fas fa-plug-circle-xmark"></i>
+                                <span>No se pudo cargar el stream. Revisa la IP y el endpoint.</span>
+                            </div>
+                        </div>
+
+                        <div class="camera-card-meta">
+                            <span><i class="fas fa-network-wired"></i> {{ camera.stream_url }}</span>
+                            <span>
+                                <i class="fas fa-arrows-rotate"></i>
+                                <span data-role="stream-mode-label">{{ 'Captura estatica' if camera.preview_mode == 'snapshot' else ('Stream con deteccion' if camera.detection_enabled else 'Stream normal') }}</span>
+                            </span>
+                            <span>
+                                <i class="fas fa-person-rays"></i>
+                                <span data-role="detection-status-label">{{ 'Deteccion en PC activa' if camera.detection_enabled else 'Deteccion no disponible' }}</span>
+                            </span>
+                            {% if camera.snapshot_url %}
+                            <span><i class="fas fa-camera"></i> Captura disponible</span>
+                            {% else %}
+                            <span><i class="fas fa-camera-slash"></i> Sin captura configurada</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="camera-card-actions">
+                            {% if camera.preview_mode == 'stream' %}
+                            <button
+                                type="button"
+                                class="ghost-button ghost-button--compact"
+                                data-action="toggle-detection"
+                                {% if not camera.detection_enabled %}disabled{% endif %}
+                            >
+                                <i class="fas fa-person-rays"></i>
+                                <span>{{ 'Desactivar deteccion' if camera.detection_enabled else 'Deteccion no disponible' }}</span>
+                            </button>
+                            {% endif %}
+                            <button type="button" class="ghost-button ghost-button--compact" data-action="refresh">
+                                <i class="fas fa-rotate"></i>
+                                <span>Recargar</span>
+                            </button>
+                            <a href="{{ camera.stream_url }}" class="ghost-button ghost-button--compact" target="_blank" rel="noreferrer">
+                                <i class="fas fa-up-right-from-square"></i>
+                                <span>Abrir stream</span>
+                            </a>
+                            {% if camera.snapshot_url %}
+                            <a href="{{ camera.snapshot_url }}" class="ghost-button ghost-button--compact" target="_blank" rel="noreferrer">
+                                <i class="fas fa-image"></i>
+                                <span>Captura</span>
+                            </a>
+                            {% endif %}
+                            <button type="button" class="danger-button danger-button--compact" data-action="delete">
+                                <i class="fas fa-trash"></i>
+                                <span>Eliminar</span>
+                            </button>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <script>
+        window.DASHBOARD_CONFIG = {
+            createEndpoint: "{{ url_for('api_create_camera') }}",
+            deleteBaseEndpoint: "/api/cameras",
+            cameras: {{ camera_payload | tojson }},
+            detectorAvailable: {{ detector_available | tojson }}
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

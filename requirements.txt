@@ -4,6 +4,7 @@ pillow
 tqdm
 flask
 opencv-python
+mediapipe
 Flask-SQLAlchemy
 Flask-Migrate
 PyMySQL

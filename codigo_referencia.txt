@@ -1,0 +1,434 @@
+#include "esp_camera.h"
+#include <WiFi.h>
+#include <WebServer.h>
+
+// =======================
+// Datos de tu WiFi
+// =======================
+const char* ssid = "kold";
+const char* password = "yerson116";
+
+// Servidor web
+WebServer server(80);
+
+// =======================
+// LED blanco / flash ESP32-CAM
+// =======================
+#define LED_BLANCO 4
+bool ledEncendido = false;
+
+// =======================
+// Pines ESP32-CAM AI Thinker
+// =======================
+#define PWDN_GPIO_NUM     32
+#define RESET_GPIO_NUM    -1
+#define XCLK_GPIO_NUM      0
+#define SIOD_GPIO_NUM     26
+#define SIOC_GPIO_NUM     27
+
+#define Y9_GPIO_NUM       35
+#define Y8_GPIO_NUM       34
+#define Y7_GPIO_NUM       39
+#define Y6_GPIO_NUM       36
+#define Y5_GPIO_NUM       21
+#define Y4_GPIO_NUM       19
+#define Y3_GPIO_NUM       18
+#define Y2_GPIO_NUM        5
+
+#define VSYNC_GPIO_NUM    25
+#define HREF_GPIO_NUM     23
+#define PCLK_GPIO_NUM     22
+
+// =======================
+// Configuracion MJPEG
+// =======================
+#define PART_BOUNDARY "123456789000000000000987654321"
+
+static const char* STREAM_CONTENT_TYPE =
+  "multipart/x-mixed-replace; boundary=" PART_BOUNDARY;
+
+static const char* STREAM_BOUNDARY =
+  "\r\n--" PART_BOUNDARY "\r\n";
+
+// =======================
+// Pagina principal
+// =======================
+void handleRoot() {
+  String html = "";
+  html += "<!DOCTYPE html>";
+  html += "<html>";
+  html += "<head>";
+  html += "<meta charset='UTF-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+  html += "<title>ESP32-CAM Realtime</title>";
+
+  html += "<style>";
+  html += "body {";
+  html += "font-family: Arial;";
+  html += "text-align: center;";
+  html += "background: #111;";
+  html += "color: white;";
+  html += "margin: 0;";
+  html += "padding: 15px;";
+  html += "}";
+
+  html += "h1 { margin-top: 10px; }";
+
+  html += "img {";
+  html += "width: 95%;";
+  html += "max-width: 640px;";
+  html += "border: 3px solid white;";
+  html += "border-radius: 10px;";
+  html += "background: black;";
+  html += "}";
+
+  html += "button {";
+  html += "padding: 12px 20px;";
+  html += "font-size: 18px;";
+  html += "margin: 10px;";
+  html += "border-radius: 8px;";
+  html += "border: none;";
+  html += "cursor: pointer;";
+  html += "}";
+
+  html += ".on { background: #ffe066; }";
+  html += ".off { background: #ff6b6b; color: white; }";
+  html += ".info { color: #ccc; }";
+  html += "</style>";
+
+  html += "</head>";
+  html += "<body>";
+
+  html += "<h1>ESP32-CAM Streaming Realtime</h1>";
+  html += "<p class='info'>Streaming MJPEG continuo con baja latencia</p>";
+
+  html += "<p>LED: <span id='estadoLed'>";
+  html += ledEncendido ? "Encendido" : "Apagado";
+  html += "</span></p>";
+
+  html += "<img id='stream' src='/stream'>";
+
+  html += "<br>";
+  html += "<button class='on' onclick=\"setLed('on')\">Encender LED</button>";
+  html += "<button class='off' onclick=\"setLed('off')\">Apagar LED</button>";
+
+  html += "<script>";
+
+  // IMPORTANTE:
+  // Se detiene el stream antes de llamar /led/on o /led/off.
+  // Si no se hace esto, el ESP32 queda ocupado enviando video
+  // y no puede atender los botones.
+  html += "function iniciarStream(){";
+  html += "var img=document.getElementById('stream');";
+  html += "img.src='/stream?t='+Date.now();";
+  html += "}";
+
+  html += "function detenerStream(){";
+  html += "var img=document.getElementById('stream');";
+  html += "img.src='';";
+  html += "}";
+
+  html += "function setLed(estado){";
+  html += "detenerStream();";
+  html += "setTimeout(function(){";
+  html += "fetch('/led/'+estado+'?t='+Date.now(), {cache:'no-store'})";
+  html += ".then(function(r){ return r.text(); })";
+  html += ".then(function(txt){";
+  html += "document.getElementById('estadoLed').innerText = estado === 'on' ? 'Encendido' : 'Apagado';";
+  html += "setTimeout(iniciarStream, 250);";
+  html += "})";
+  html += ".catch(function(e){";
+  html += "alert('Error controlando LED');";
+  html += "setTimeout(iniciarStream, 250);";
+  html += "});";
+  html += "}, 300);";
+  html += "}";
+
+  html += "</script>";
+
+  html += "</body>";
+  html += "</html>";
+
+  server.send(200, "text/html", html);
+}
+
+// =======================
+// Encender LED
+// =======================
+void handleLedOn() {
+  digitalWrite(LED_BLANCO, HIGH);
+  ledEncendido = true;
+
+  Serial.println("LED encendido");
+
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Cache-Control", "no-store");
+  server.send(200, "text/plain", "LED encendido");
+}
+
+// =======================
+// Apagar LED
+// =======================
+void handleLedOff() {
+  digitalWrite(LED_BLANCO, LOW);
+  ledEncendido = false;
+
+  Serial.println("LED apagado");
+
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Cache-Control", "no-store");
+  server.send(200, "text/plain", "LED apagado");
+}
+
+// =======================
+// Estado LED
+// =======================
+void handleLedStatus() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Cache-Control", "no-store");
+
+  if (ledEncendido) {
+    server.send(200, "text/plain", "on");
+  } else {
+    server.send(200, "text/plain", "off");
+  }
+}
+
+// =======================
+// Streaming MJPEG baja latencia
+// =======================
+void handleStream() {
+  WiFiClient client = server.client();
+
+  Serial.println("Cliente conectado al streaming");
+
+  client.setNoDelay(true);
+
+  String response = "HTTP/1.1 200 OK\r\n";
+  response += "Content-Type: ";
+  response += STREAM_CONTENT_TYPE;
+  response += "\r\n";
+  response += "Access-Control-Allow-Origin: *\r\n";
+  response += "Cache-Control: no-store, no-cache, must-revalidate, max-age=0\r\n";
+  response += "Pragma: no-cache\r\n";
+  response += "Expires: 0\r\n";
+  response += "Connection: close\r\n\r\n";
+
+  client.print(response);
+
+  while (client.connected()) {
+    camera_fb_t *fb = esp_camera_fb_get();
+
+    if (!fb) {
+      Serial.println("Error capturando frame");
+      delay(1);
+      continue;
+    }
+
+    client.print(STREAM_BOUNDARY);
+
+    char partBuf[96];
+    int hlen = snprintf(
+      partBuf,
+      sizeof(partBuf),
+      "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
+      fb->len
+    );
+
+    client.write((const uint8_t*)partBuf, hlen);
+
+    size_t written = client.write(fb->buf, fb->len);
+
+    esp_camera_fb_return(fb);
+
+    if (written == 0) {
+      Serial.println("Cliente desconectado o lento");
+      break;
+    }
+
+    delay(1);
+  }
+
+  Serial.println("Cliente desconectado del streaming");
+}
+
+// =======================
+// Foto individual opcional
+// =======================
+void handleFoto() {
+  camera_fb_t *fb = esp_camera_fb_get();
+
+  if (!fb) {
+    Serial.println("Error tomando foto");
+    server.send(500, "text/plain", "Error tomando foto");
+    return;
+  }
+
+  WiFiClient client = server.client();
+
+  server.setContentLength(fb->len);
+  server.send(200, "image/jpeg", "");
+
+  client.write(fb->buf, fb->len);
+
+  esp_camera_fb_return(fb);
+}
+
+// =======================
+// Iniciar camara
+// =======================
+bool iniciarCamara() {
+  camera_config_t config;
+
+  config.ledc_channel = LEDC_CHANNEL_0;
+  config.ledc_timer = LEDC_TIMER_0;
+
+  config.pin_d0 = Y2_GPIO_NUM;
+  config.pin_d1 = Y3_GPIO_NUM;
+  config.pin_d2 = Y4_GPIO_NUM;
+  config.pin_d3 = Y5_GPIO_NUM;
+  config.pin_d4 = Y6_GPIO_NUM;
+  config.pin_d5 = Y7_GPIO_NUM;
+  config.pin_d6 = Y8_GPIO_NUM;
+  config.pin_d7 = Y9_GPIO_NUM;
+
+  config.pin_xclk = XCLK_GPIO_NUM;
+  config.pin_pclk = PCLK_GPIO_NUM;
+  config.pin_vsync = VSYNC_GPIO_NUM;
+  config.pin_href = HREF_GPIO_NUM;
+
+  config.pin_sccb_sda = SIOD_GPIO_NUM;
+  config.pin_sccb_scl = SIOC_GPIO_NUM;
+
+  config.pin_pwdn = PWDN_GPIO_NUM;
+  config.pin_reset = RESET_GPIO_NUM;
+
+  // =======================
+  // Configuracion para baja latencia
+  // =======================
+  config.xclk_freq_hz = 20000000;
+  config.pixel_format = PIXFORMAT_JPEG;
+
+  // Ajuste conservador para deteccion continua:
+  // QQVGA mantiene mejor fluidez en la OV2640 y ayuda a que
+  // el stream llegue estable al PC para procesarlo.
+  config.frame_size = FRAMESIZE_QQVGA;
+
+  // Menor numero = mas calidad y mas peso
+  // Mayor numero = menos calidad y menos delay
+  config.jpeg_quality = 16;
+
+  if (psramFound()) {
+    config.fb_count = 2;
+    config.fb_location = CAMERA_FB_IN_PSRAM;
+    config.grab_mode = CAMERA_GRAB_LATEST;
+    Serial.println("PSRAM detectada: usando modo baja latencia");
+  } else {
+    config.fb_count = 1;
+    config.fb_location = CAMERA_FB_IN_DRAM;
+    config.grab_mode = CAMERA_GRAB_LATEST;
+    Serial.println("PSRAM no detectada: usando DRAM");
+  }
+
+  Serial.println("Iniciando camara...");
+
+  esp_err_t err = esp_camera_init(&config);
+
+  if (err != ESP_OK) {
+    Serial.print("Error iniciando camara: 0x");
+    Serial.println(err, HEX);
+    return false;
+  }
+
+  Serial.println("Camara inicializada correctamente");
+
+  sensor_t *s = esp_camera_sensor_get();
+
+  if (s != NULL) {
+    s->set_framesize(s, FRAMESIZE_QQVGA);
+    s->set_quality(s, 16);
+
+    s->set_brightness(s, 0);
+    s->set_contrast(s, 0);
+    s->set_saturation(s, 0);
+
+    s->set_gain_ctrl(s, 1);
+    s->set_exposure_ctrl(s, 1);
+    s->set_awb_gain(s, 1);
+
+    s->set_special_effect(s, 0);
+    s->set_whitebal(s, 1);
+  }
+
+  return true;
+}
+
+// =======================
+// Setup
+// =======================
+void setup() {
+  Serial.begin(115200);
+  delay(2000);
+
+  pinMode(LED_BLANCO, OUTPUT);
+  digitalWrite(LED_BLANCO, LOW);
+  ledEncendido = false;
+
+  Serial.println();
+  Serial.println("Iniciando ESP32-CAM Streaming Realtime...");
+
+  if (!iniciarCamara()) {
+    Serial.println("No se pudo iniciar la camara");
+    return;
+  }
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  // Importante para reducir latencia WiFi
+  WiFi.setSleep(false);
+
+  Serial.print("Conectando a WiFi");
+
+  int intentos = 0;
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+    intentos++;
+
+    if (intentos > 60) {
+      Serial.println();
+      Serial.println("No se pudo conectar al WiFi");
+      Serial.println("Revisa nombre, clave o que sea red 2.4GHz");
+      return;
+    }
+  }
+
+  Serial.println();
+  Serial.println("WiFi conectado");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+
+  Serial.print("Abre en el navegador: http://");
+  Serial.println(WiFi.localIP());
+
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/stream", HTTP_GET, handleStream);
+  server.on("/foto", HTTP_GET, handleFoto);
+
+  server.on("/led/on", HTTP_GET, handleLedOn);
+  server.on("/led/off", HTTP_GET, handleLedOff);
+  server.on("/led/status", HTTP_GET, handleLedStatus);
+
+  server.begin();
+
+  Serial.println("Servidor iniciado");
+}
+
+// =======================
+// Loop
+// =======================
+void loop() {
+  server.handleClient();
+}

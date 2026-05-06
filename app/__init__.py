@@ -1,16 +1,18 @@
 import json
 import re
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, Response, jsonify, redirect, render_template, request, session, url_for
 from sqlalchemy import or_
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from config import Config
 
 from .extensions import db, migrate
-from .models import User
+from .models import Camera, User
+from .vision import generate_processed_stream, is_person_detector_available
 
 
 def limit_to_two_sentences(text):
@@ -27,6 +29,100 @@ def limit_to_two_sentences(text):
         short_answer = f'{short_answer}.'
 
     return short_answer
+
+
+def normalize_camera_url(raw_url):
+    """Normaliza una URL de camara agregando esquema HTTP si falta."""
+    candidate = (raw_url or '').strip()
+    if not candidate:
+        return ''
+
+    if '://' not in candidate:
+        candidate = f'http://{candidate}'
+
+    return candidate
+
+
+def is_valid_camera_url(url):
+    """Valida que la URL de camara sea HTTP o HTTPS y tenga host."""
+    parsed = urlparse(url)
+    return parsed.scheme in {'http', 'https'} and bool(parsed.netloc)
+
+
+def infer_snapshot_url(stream_url):
+    """Intenta inferir la captura estatica para streams ESP32-CAM comunes."""
+    if stream_url.endswith('/foto') or stream_url.endswith('/capture'):
+        return stream_url
+    return ''
+
+
+def is_live_stream_url(url):
+    """Detecta endpoints comunes de video en vivo como ESP32-CAM o DroidCam."""
+    normalized_url = normalize_camera_url(url).lower()
+    if not normalized_url:
+        return False
+
+    stream_markers = (
+        '/stream',
+        '/video',
+        '.mjpg',
+        '.mjpeg',
+        'action=stream',
+    )
+    return any(marker in normalized_url for marker in stream_markers)
+
+
+def resolve_camera_urls(input_url, input_snapshot_url=''):
+    """Resuelve URLs reales para camaras ESP32-CAM y endpoints comunes."""
+    normalized_input = normalize_camera_url(input_url)
+    parsed = urlparse(normalized_input)
+    path = parsed.path or ''
+    base_url = f'{parsed.scheme}://{parsed.netloc}'
+
+    if not path or path == '/':
+        stream_url = f'{base_url}/stream'
+    elif path == '/foto':
+        # Compatibilidad con registros antiguos que guardaban /foto como stream.
+        stream_url = f'{base_url}/stream'
+    else:
+        stream_url = normalized_input
+
+    snapshot_url = normalize_camera_url(input_snapshot_url)
+    if not snapshot_url:
+        snapshot_url = infer_snapshot_url(stream_url)
+
+    preview_url = snapshot_url or stream_url
+    preview_mode = 'snapshot'
+    if is_live_stream_url(stream_url) and preview_url == stream_url:
+        preview_mode = 'stream'
+
+    return stream_url, snapshot_url, preview_url, preview_mode
+
+
+def serialize_camera(camera):
+    """Convierte una camara a un formato JSON util para el dashboard."""
+    _, _, preview_url, preview_mode = resolve_camera_urls(
+        camera.stream_url,
+        camera.snapshot_url or ''
+    )
+    detection_enabled = preview_mode == 'stream' and is_person_detector_available()
+    detection_stream_url = ''
+    if camera.id and detection_enabled:
+        detection_stream_url = url_for('api_camera_processed_stream', camera_id=camera.id)
+
+    return {
+        'id': camera.id,
+        'name': camera.name,
+        'stream_url': camera.stream_url,
+        'snapshot_url': camera.snapshot_url or '',
+        'preview_url': preview_url,
+        'preview_mode': preview_mode,
+        'detection_stream_url': detection_stream_url,
+        'detection_enabled': detection_enabled,
+        'location': camera.location or '',
+        'is_active': bool(camera.is_active),
+        'created_at': camera.created_at.isoformat()
+    }
 
 
 def create_app():
@@ -285,13 +381,154 @@ def create_app():
             'response': answer
         }), 200
 
+    @app.route('/api/cameras', methods=['POST'])
+    def api_create_camera():
+        """Registra una camara IP para el usuario autenticado."""
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'message': 'Debes iniciar sesion para agregar camaras'
+            }), 401
+
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'Datos no proporcionados'
+            }), 400
+
+        name = data.get('name', '').strip()
+        location = data.get('location', '').strip()
+        raw_stream_url = data.get('stream_url', '')
+        raw_snapshot_url = data.get('snapshot_url', '')
+        normalized_stream_input = normalize_camera_url(raw_stream_url)
+        normalized_snapshot_input = normalize_camera_url(raw_snapshot_url)
+
+        if not name:
+            return jsonify({
+                'success': False,
+                'message': 'El nombre de la camara es obligatorio'
+            }), 400
+
+        if not normalized_stream_input:
+            return jsonify({
+                'success': False,
+                'message': 'La URL base o del stream es obligatoria'
+            }), 400
+
+        if not is_valid_camera_url(normalized_stream_input):
+            return jsonify({
+                'success': False,
+                'message': 'La URL base o del stream no es valida'
+            }), 400
+
+        if normalized_snapshot_input and not is_valid_camera_url(normalized_snapshot_input):
+            return jsonify({
+                'success': False,
+                'message': 'La URL de captura no es valida'
+            }), 400
+
+        stream_url, snapshot_url, _, _ = resolve_camera_urls(
+            normalized_stream_input,
+            normalized_snapshot_input
+        )
+
+        camera = Camera(
+            user_id=user_id,
+            name=name,
+            location=location or None,
+            stream_url=stream_url,
+            snapshot_url=snapshot_url or None,
+            is_active=True
+        )
+        db.session.add(camera)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Camara agregada correctamente',
+            'camera': serialize_camera(camera)
+        }), 201
+
+    @app.route('/api/cameras/<int:camera_id>', methods=['DELETE'])
+    def api_delete_camera(camera_id):
+        """Elimina una camara registrada por el usuario autenticado."""
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'message': 'Debes iniciar sesion para gestionar camaras'
+            }), 401
+
+        camera = Camera.query.filter_by(id=camera_id, user_id=user_id).first()
+        if not camera:
+            return jsonify({
+                'success': False,
+                'message': 'La camara no existe o no te pertenece'
+            }), 404
+
+        db.session.delete(camera)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Camara eliminada correctamente'
+        }), 200
+
+    @app.route('/api/cameras/<int:camera_id>/processed_stream')
+    def api_camera_processed_stream(camera_id):
+        """Entrega un stream MJPEG procesado con deteccion de personas."""
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'message': 'Debes iniciar sesion para ver el stream procesado'
+            }), 401
+
+        camera = Camera.query.filter_by(id=camera_id, user_id=user_id).first()
+        if not camera:
+            return jsonify({
+                'success': False,
+                'message': 'La camara no existe o no te pertenece'
+            }), 404
+
+        if not is_person_detector_available():
+            return jsonify({
+                'success': False,
+                'message': 'OpenCV o MediaPipe no estan instalados en el entorno'
+            }), 503
+
+        return Response(
+            generate_processed_stream(camera.stream_url),
+            mimetype='multipart/x-mixed-replace; boundary=frame'
+        )
+
     @app.route('/dashboard')
     def dashboard():
         """Pagina del dashboard protegida por sesion."""
-        if 'user_id' not in session:
+        user_id = session.get('user_id')
+        if not user_id:
             return redirect(url_for('login'))
 
-        return render_template('index.html')
+        user = User.query.get(user_id)
+        if not user:
+            session.clear()
+            return redirect(url_for('login'))
+
+        cameras = Camera.query.filter_by(user_id=user.id).order_by(Camera.created_at.desc()).all()
+        camera_cards = [serialize_camera(camera) for camera in cameras]
+        active_cameras = sum(1 for camera in cameras if camera.is_active)
+
+        return render_template(
+            'dashboard.html',
+            user=user,
+            cameras=camera_cards,
+            total_cameras=len(cameras),
+            active_cameras=active_cameras,
+            camera_payload=camera_cards,
+            detector_available=is_person_detector_available()
+        )
 
     @app.after_request
     def add_cache_headers(response):
