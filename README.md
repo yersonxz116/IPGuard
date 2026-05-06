@@ -10,6 +10,8 @@ Aplicacion web en Flask para gestion de acceso, autenticacion de usuarios y cons
 - Passwords hasheadas con Werkzeug.
 - Migraciones con Flask-Migrate y Alembic.
 - Dashboard autenticado para registrar y visualizar camaras IP.
+- Deteccion de personas en streams de camaras IP con OpenCV y MediaPipe Pose.
+- Stream MJPEG procesado en el servidor con recuadro sobre la persona detectada.
 - Vista `/ia` conectada a Ollama.
 - Chat IA responsive con scroll interno solo en el historial de mensajes.
 - Compatible con ESP32-CAM que publica imagenes por `http://IP/foto`.
@@ -22,6 +24,8 @@ Aplicacion web en Flask para gestion de acceso, autenticacion de usuarios y cons
 - Flask-Migrate
 - MySQL
 - PyMySQL
+- OpenCV
+- MediaPipe
 - Ollama
 
 ## Estructura principal
@@ -51,6 +55,7 @@ persona/
 - Python 3.10 o superior
 - `pip`
 - MySQL Server disponible en `127.0.0.1:3306`
+- Modelo local de MediaPipe en `app/models/pose_landmarker_full.task` para activar deteccion de personas
 - Ollama instalado si vas a usar la vista `/ia`
 
 ## Preparar un equipo nuevo
@@ -148,6 +153,25 @@ ollama pull gemma3:1b
 
 Si usas otro modelo, cambia `OLLAMA_MODEL` en `.env`.
 
+## Deteccion con OpenCV y MediaPipe
+
+Cambios aplicados el 2026-05-06:
+
+- Se agregaron `opencv-python` y `mediapipe` a `requirements.txt`.
+- Se agrego `app/vision.py` para cargar dependencias de vision de forma perezosa.
+- Se integro MediaPipe Pose con el modelo local `app/models/pose_landmarker_full.task`.
+- Se agrego procesamiento de stream MJPEG para dibujar un recuadro sobre la persona detectada.
+- Se agrego el endpoint protegido `/api/cameras/<id>/processed_stream`.
+- El dashboard usa el stream procesado cuando la deteccion esta disponible y conserva el stream original como fallback.
+
+Para que la deteccion funcione, confirma que existe este archivo:
+
+```text
+app/models/pose_landmarker_full.task
+```
+
+Si falta OpenCV, MediaPipe o el modelo local, el dashboard mantiene la camara visible, pero marca la deteccion como no disponible o muestra un frame de estado.
+
 ## Ejecutar la aplicacion
 
 ```powershell
@@ -186,6 +210,7 @@ ollama pull gemma3:1b
 - `/dashboard` : vista protegida por sesion
 - `/api/cameras` : registrar camara IP
 - `/api/cameras/<id>` : eliminar camara IP
+- `/api/cameras/<id>/processed_stream` : stream MJPEG procesado con OpenCV y MediaPipe
 - `/ia` : chat IA publico
 - `/api/login` : autenticacion JSON
 - `/api/ia/chat` : consulta al modelo de Ollama
@@ -199,14 +224,18 @@ Despues de levantar el proyecto, valida:
 3. `/login` permite entrar con `username` o `email`.
 4. `/dashboard` redirige a login si no hay sesion.
 5. `/dashboard` permite agregar una camara y mostrar su stream.
-6. `/ia` abre el chat.
-7. `/api/ia/chat` responde si Ollama esta activo.
+6. En una camara con stream compatible, el dashboard muestra la deteccion en PC activa.
+7. El boton de deteccion permite alternar entre stream procesado y stream original.
+8. `/api/cameras/<id>/processed_stream` entrega un MJPEG si la camara y el modelo estan disponibles.
+9. `/ia` abre el chat.
+10. `/api/ia/chat` responde si Ollama esta activo.
 
 ## Notas tecnicas
 
 - La app carga variables de entorno desde `.env` con `python-dotenv`.
 - La configuracion vive en `config.py`.
 - La inicializacion de Flask, rutas y endpoint de IA viven en `app/__init__.py`.
+- La deteccion con OpenCV y MediaPipe vive en `app/vision.py`.
 - El modelo `User` vive en `app/models.py`.
 
 ## Archivos que no deben subirse
