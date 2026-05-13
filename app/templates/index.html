@@ -3,24 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IPGuard - Sistema de detección de personas en cámaras IP mediante inteligencia artificial con notificaciones automáticas vía WhatsApp.">
     <title>IPGuard - Sistema de Detección de Seguridad</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@latest/devicon.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset_url('css/icons.min.css') }}">
+    <link rel="stylesheet" href="{{ asset_url('css/style.min.css') }}">
 </head>
 <body>
-    <!-- Video Background -->
-    <video class="video-bg" muted playsinline loop currentTime="3" id="heroVideo">
-        <source src="{{ url_for('static', filename='assets/video/city.mp4') }}" type="video/mp4">
-    </video>
-    <div class="video-overlay"></div>
     <!-- Navbar -->
-    <nav class="navbar">
+    <nav class="navbar" role="navigation" aria-label="Navegación principal">
         <div class="navbar-brand">
-            <img src="{{ url_for('static', filename='assets/image/logo.jpeg') }}" alt="IPGuard Logo">
+            <img src="{{ asset_url('assets/image/logo.jpeg') }}" alt="IPGuard Logo" width="40" height="40">
             <div class="logo-text">IP<span>Guard</span></div>
         </div>
         <ul class="navbar-links">
@@ -37,7 +29,19 @@
     </nav>
 
     <!-- Hero Section -->
+    <main>
     <section id="inicio" class="hero">
+        <video
+            class="video-bg"
+            autoplay
+            muted
+            playsinline
+            loop
+            preload="auto"
+            id="heroVideo"
+            src="{{ asset_url('assets/video/city.mp4') }}"
+        ></video>
+        <div class="video-overlay" aria-hidden="true"></div>
         <div class="hero-content">
             <h1>IPGuard</h1>
             <p class="hero-subtitle">Detección de personas en cámaras IP mediante inteligencia artificial</p>
@@ -59,165 +63,98 @@
             <div class="underline"></div>
         </div>
 
-        <!-- Backend Technologies -->
-        <h3 class="tech-category-title">Backend</h3>
-        <div class="logo-carousel">
-            <div class="logo-carousel-track">
-                <div class="tech-card">
-                    <i class="devicon-flask-original colored"></i>
-                    <h3>Flask</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-mysql-original colored"></i>
-                    <h3>MySQL</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-pytorch-original colored"></i>
-                    <h3>PyTorch</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-opencv-plain colored"></i>
-                    <h3>OpenCV</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-arduino-plain colored"></i>
-                    <h3>ESP32</h3>
-                </div>
-                <!-- Duplicated 3x for seamless infinite scroll -->
-                <div class="tech-card">
-                    <i class="devicon-flask-original colored"></i>
-                    <h3>Flask</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-mysql-original colored"></i>
-                    <h3>MySQL</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-pytorch-original colored"></i>
-                    <h3>PyTorch</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-opencv-plain colored"></i>
-                    <h3>OpenCV</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-arduino-plain colored"></i>
-                    <h3>ESP32</h3>
-                </div>
-                <!-- 2nd duplicate set -->
-                <div class="tech-card">
-                    <i class="devicon-flask-original colored"></i>
-                    <h3>Flask</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-mysql-original colored"></i>
-                    <h3>MySQL</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-pytorch-original colored"></i>
-                    <h3>PyTorch</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-opencv-plain colored"></i>
-                    <h3>OpenCV</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-arduino-plain colored"></i>
-                    <h3>ESP32</h3>
-                </div>
-                <!-- 3rd duplicate set -->
-                <div class="tech-card">
-                    <i class="devicon-flask-original colored"></i>
-                    <h3>Flask</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-mysql-original colored"></i>
-                    <h3>MySQL</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-pytorch-original colored"></i>
-                    <h3>PyTorch</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-opencv-plain colored"></i>
-                    <h3>OpenCV</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-arduino-plain colored"></i>
-                    <h3>ESP32</h3>
-                </div>
-                <!-- 4th duplicate set -->
-                <div class="tech-card">
-                    <i class="devicon-flask-original colored"></i>
-                    <h3>Flask</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-mysql-original colored"></i>
-                    <h3>MySQL</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-pytorch-original colored"></i>
-                    <h3>PyTorch</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-opencv-plain colored"></i>
-                    <h3>OpenCV</h3>
-                </div>
-                <div class="tech-card">
-                    <i class="devicon-arduino-plain colored"></i>
-                    <h3>ESP32</h3>
-                </div>
+        <div class="bento-grid">
+            <div class="bento-card bento-card--wide">
+                <span class="bento-tag">Servidor Web</span>
+                <i class="devicon-flask-original colored"></i>
+                <h3>Flask</h3>
+                <p>Framework ligero en Python para la API REST, autenticación y servicio de streams MJPEG.</p>
             </div>
-        </div>
 
-        <!-- Frontend Technologies -->
-        <h3 class="tech-category-title">Frontend</h3>
-        <div class="tech-grid-frontend">
-            <div class="tech-card">
-                <div class="tech-icon">
-                    <i class="devicon-html5-plain colored"></i>
-                </div>
-                <h3>HTML5 y CSS3</h3>
-                <p>Tecnologías frontend para crear una interfaz de usuario responsive, moderna y atractiva visualmente.</p>
+            <div class="bento-card">
+                <span class="bento-tag">Base de Datos</span>
+                <i class="devicon-mysql-original colored"></i>
+                <h3>MySQL</h3>
+                <p>Persistencia de usuarios y cámaras registradas.</p>
             </div>
-            <div class="tech-card">
-                <div class="tech-icon">
-                    <i class="devicon-javascript-plain colored"></i>
-                </div>
+
+            <div class="bento-card">
+                <span class="bento-tag">IA / Detección</span>
+                <i class="devicon-pytorch-original colored"></i>
+                <h3>MediaPipe</h3>
+                <p>Pose Estimation para detección de personas en tiempo real.</p>
+            </div>
+
+            <div class="bento-card">
+                <span class="bento-tag">Visión</span>
+                <i class="devicon-opencv-plain colored"></i>
+                <h3>OpenCV</h3>
+                <p>Procesamiento de video y generación de streams anotados.</p>
+            </div>
+
+            <div class="bento-card bento-card--tall">
+                <span class="bento-tag">Hardware</span>
+                <i class="devicon-arduino-plain colored"></i>
+                <h3>ESP32-CAM</h3>
+                <p>Módulo de cámara WiFi que transmite video por HTTP para captura remota.</p>
+            </div>
+
+            <div class="bento-card">
+                <span class="bento-tag">Estructura</span>
+                <i class="devicon-html5-plain colored"></i>
+                <h3>HTML5</h3>
+                <p>Semántica y accesibilidad en la interfaz web.</p>
+            </div>
+
+            <div class="bento-card">
+                <span class="bento-tag">Interactividad</span>
+                <i class="devicon-javascript-plain colored"></i>
                 <h3>JavaScript</h3>
-                <p>Lenguaje de programación para crear interactividad y lógica en el lado del cliente de la aplicación web.</p>
+                <p>Lógica del cliente, manejo de streams y formularios.</p>
             </div>
-            <div class="tech-card">
-                <div class="tech-icon">
-                    <i class="devicon-css3-plain colored"></i>
-                </div>
+
+            <div class="bento-card">
+                <span class="bento-tag">Estilos</span>
+                <i class="devicon-css3-plain colored"></i>
                 <h3>CSS3</h3>
-                <p>Hojas de estilo en cascada para diseñar y dar formato visual a las páginas web.</p>
+                <p>Diseño responsive con variables y grid moderno.</p>
             </div>
         </div>
     </section>
 
     <!-- Mission Vision Section -->
-    <section id="mision-vision" class="section">
-        <div class="section-title">
+    <section id="mision-vision" class="mv-section">
+        <div class="mv-bg-blobs" aria-hidden="true"></div>
+        <div class="mv-grid-pattern" aria-hidden="true"></div>
+        <div class="mv-header">
             <h2>Misión y Visión</h2>
-            <div class="underline"></div>
+            <div class="mv-underline"></div>
+            <p class="mv-subtitle">Seguridad inteligente para hogares conectados</p>
         </div>
         <div class="mv-container">
-            <div class="mv-card">
-                <h3><i class="fas fa-rocket"></i> Misión</h3>
-                <p>
+            <div class="mv-card mv-card--left">
+                <span class="mv-card__number">01</span>
+                <div class="mv-card__glow" aria-hidden="true"></div>
+                <div class="mv-card__icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="mv-card__title">Misión</h3>
+                <p class="mv-card__text">
                     Proporcionar una solución de seguridad accesible y eficiente que permita a los usuarios
-                    monitorear sus espacios en tiempo real mediante cámaras IP, utilizando inteligencia artificial
-                    para la detección automática de personas y notificaciones instantáneas que garanticen
-                    la protección del hogar y sus seres queridos.
+                    monitorear sus espacios en tiempo real mediante cámaras IP, inteligencia artificial
+                    y notificaciones instantáneas que garanticen la protección del hogar y sus seres queridos.
                 </p>
             </div>
-            <div class="mv-card">
-                <h3><i class="fas fa-compass"></i> Visión</h3>
-                <p>
-                    Convertirse en una referencia nacional en sistemas de vigilancia inteligente domestica,
-                    innovando continuamente en la detección de objetos y el análisis de video mediante
+            <div class="mv-card mv-card--right">
+                <span class="mv-card__number">02</span>
+                <div class="mv-card__glow" aria-hidden="true"></div>
+                <div class="mv-card__icon">
+                    <i class="fas fa-eye"></i>
+                </div>
+                <h3 class="mv-card__title">Visión</h3>
+                <p class="mv-card__text">
+                    Convertirse en una referencia nacional en sistemas de vigilancia inteligente doméstica,
+                    innovando continuamente en la detección de objetos y análisis de video mediante
                     redes neuronales profundas, democratizando el acceso a tecnología de seguridad
                     avanzada para todos los hogares.
                 </p>
@@ -226,38 +163,80 @@
     </section>
 
     <!-- Objectives Section -->
-    <section id="objetivos" class="section">
-        <div class="section-title">
+    <section id="objetivos" class="obj-section">
+        <div class="obj-bg-blobs" aria-hidden="true"></div>
+        <div class="obj-grid-pattern" aria-hidden="true"></div>
+        <div class="obj-header">
             <h2>Objetivos</h2>
-            <div class="underline"></div>
+            <div class="obj-underline"></div>
+            <p class="obj-subtitle">Ruta de desarrollo del sistema de vigilancia inteligente</p>
         </div>
-        <div class="obj-container">
-            <div class="obj-general">
-                <h3><i class="fas fa-crosshairs"></i> Objetivo General</h3>
-                <p>
-                    Desarrollar un sistema de monitoreo y detección de personas en tiempo real
-                    para cámaras IP, utilizando una red neuronal convolucional basada en yolo11s
-                    con arquitectura Faster R-CNN, implementada mediante un servidor Flask con interfaz
-                    web intuitiva y notificaciones automáticas de WhatsApp.
+        <div class="obj-bento">
+            <div class="obj-general-card obj-animate--left">
+                <div class="obj-general-card__glow" aria-hidden="true"></div>
+                <div class="obj-general-card__icon">
+                    <i class="fas fa-crosshairs"></i>
+                </div>
+                <h3 class="obj-general-card__title">Objetivo General</h3>
+                <p class="obj-general-card__text">
+                    Implementar un sistema de monitoreo y detección de personas en tiempo real
+                    para cámaras IP, utilizando MediaPipe Pose y OpenCV
+                    mediante un servidor Flask con interfaz web intuitiva y notificaciones
+                    automáticas de WhatsApp.
                 </p>
             </div>
-            <div class="obj-specific">
-                <h3><i class="fas fa-list-check"></i> Objetivos Específicos</h3>
-                <ul class="obj-list">
-                    <li>Diseñar y entrenar un modelo de detección de objetos utilizando transfer learning con yolo11s como backbone.</li>
-                    <li>Implementar un servidor Flask con API REST para la comunicación entre el modelo de IA y la interfaz web.</li>
-                    <li>Desarrollar una interfaz web responsive que permita gestionar cámaras IP, visualizar detecciones y configurar horarios de monitoreo.</li>
-                    <li>Integrar un sistema de notificaciones automáticas mediante WhatsApp que alerte al usuario cuando se detecte una persona.</li>
-                </ul>
+            <div class="obj-timeline obj-animate--right">
+                <h3 class="obj-timeline__title"><i class="fas fa-list-check"></i> Objetivos Específicos</h3>
+                <div class="obj-timeline__track">
+                    <div class="obj-timeline__line" aria-hidden="true"></div>
+                    <div class="obj-timeline__step">
+                        <div class="obj-timeline__marker">
+                            <span>1</span>
+                        </div>
+                        <div class="obj-timeline__card">
+                            <div class="obj-timeline__card-icon"><i class="fas fa-brain"></i></div>
+                            <p>Analizar los requerimientos del sistema de monitoreo y las técnicas de detección de personas basadas en MediaPipe y OpenCV para determinar la configuración óptima del modelo Pose Landmarker.</p>
+                        </div>
+                    </div>
+                    <div class="obj-timeline__step">
+                        <div class="obj-timeline__marker">
+                            <span>2</span>
+                        </div>
+                        <div class="obj-timeline__card">
+                            <div class="obj-timeline__card-icon"><i class="fas fa-network-wired"></i></div>
+                            <p>Implementar un servidor Flask con API REST para la comunicación entre el módulo de detección y la interfaz web.</p>
+                        </div>
+                    </div>
+                    <div class="obj-timeline__step">
+                        <div class="obj-timeline__marker">
+                            <span>3</span>
+                        </div>
+                        <div class="obj-timeline__card">
+                            <div class="obj-timeline__card-icon"><i class="fas fa-mobile-screen"></i></div>
+                            <p>Implementar una interfaz web responsive que permita gestionar cámaras IP, visualizar detecciones y configurar horarios de monitoreo.</p>
+                        </div>
+                    </div>
+                    <div class="obj-timeline__step">
+                        <div class="obj-timeline__marker">
+                            <span>4</span>
+                        </div>
+                        <div class="obj-timeline__card">
+                            <div class="obj-timeline__card-icon"><i class="fab fa-whatsapp"></i></div>
+                            <p>Implementar un sistema de notificaciones automáticas mediante WhatsApp que alerte al usuario cuando se detecte una persona.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
+
+    </main>
 
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-brand">
-                <img src="{{ url_for('static', filename='assets/image/logo.jpeg') }}" alt="IPGuard Logo">
+                <img src="{{ asset_url('assets/image/logo.jpeg') }}" alt="IPGuard Logo" width="40" height="40" loading="lazy">
                 <div>
                     <h3>IPGuard</h3>
                     <p>Sistema de Detección de Seguridad</p>
@@ -277,10 +256,10 @@
         </div>
         <div class="footer-bottom">
             <p>IPGuard © 2026 - <span>Sistema de Detección de Seguridad</span></p>
-            <p>Desarrollado con Flask, PyTorch y OpenCV</p>
+            <p>Desarrollado con Flask, MediaPipe y OpenCV</p>
         </div>
     </footer>
 
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ asset_url('js/main.js') }}" defer></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 import json
 import re
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
@@ -128,9 +129,20 @@ def serialize_camera(camera):
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000
 
     db.init_app(app)
     migrate.init_app(app, db)
+
+    @app.context_processor
+    def inject_asset_url():
+        """Agrega versionado por mtime a archivos estaticos locales."""
+        def asset_url(filename):
+            static_path = Path(app.static_folder) / filename
+            version = int(static_path.stat().st_mtime) if static_path.exists() else 1
+            return url_for('static', filename=filename, v=version)
+
+        return {'asset_url': asset_url}
 
     @app.route('/')
     def index():
@@ -533,7 +545,9 @@ def create_app():
     @app.after_request
     def add_cache_headers(response):
         if 'static' in request.path:
-            response.headers['Cache-Control'] = 'public, max-age=3600'
+            response.headers['Cache-Control'] = (
+                'public, max-age=31536000, immutable, stale-while-revalidate=86400'
+            )
         return response
 
     return app

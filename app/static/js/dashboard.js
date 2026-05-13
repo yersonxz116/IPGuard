@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 img.src = `${baseUrl}?t=${Date.now()}`;
             });
-        }, 700);
+        }, 5000);
     }
 
     function syncEmptyState() {

@@ -172,7 +172,7 @@ body.ia-page::before {
     font-size: clamp(1.48rem, 1.3rem + 0.8vw, 2rem);
     font-weight: 800;
     line-height: 1.05;
-    letter-spacing: -0.03em;
+    letter-spacing: 0;
 }
 
 .panel-copy {
@@ -284,7 +284,7 @@ body.ia-page::before {
     margin: 0;
     font-size: clamp(1.16rem, 1.05rem + 0.45vw, 1.42rem);
     line-height: 1.1;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
 }
 
 .toolbar-button {

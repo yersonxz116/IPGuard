@@ -43,6 +43,7 @@ body.dashboard-page {
     background-image: linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px);
     background-size: 100% 32px;
     opacity: 0.4;
+    contain: strict;
 }
 
 .dashboard-shell {
@@ -60,7 +61,6 @@ body.dashboard-page {
     border: 1px solid var(--dash-line);
     background: var(--dash-surface);
     box-shadow: var(--dash-shadow);
-    backdrop-filter: blur(18px);
 }
 
 .dashboard-topbar {
