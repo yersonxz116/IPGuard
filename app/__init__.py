@@ -12,7 +12,22 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from config import Config
 
 from .extensions import db, migrate
-from .models import Camera, User
+from .models import BackupCode, Camera, User
+from .security import (
+    decrypt_value,
+    encrypt_value,
+    generate_backup_codes,
+    generate_pem_challenge,
+    generate_totp_secret,
+    hash_backup_code,
+    now_utc,
+    qr_code_data_uri,
+    totp_uri,
+    validate_public_key_pem,
+    verify_backup_code,
+    verify_pem_signature,
+    verify_totp,
+)
 from .vision import generate_processed_stream, is_person_detector_available
 
 
@@ -143,6 +158,63 @@ def create_app():
             return url_for('static', filename=filename, v=version)
 
         return {'asset_url': asset_url}
+
+    def get_authenticated_user():
+        user_id = session.get('user_id')
+        if not user_id:
+            return None
+        return User.query.get(user_id)
+
+    def finish_login(user):
+        session.pop('mfa_user_id', None)
+        session.pop('mfa_setup_secret', None)
+        session.pop('pem_challenge', None)
+        session['user_id'] = user.id
+        session['username'] = user.username
+        session['logged_in'] = True
+
+    def available_backup_codes(user):
+        return BackupCode.query.filter_by(user_id=user.id, used_at=None).count()
+
+    def replace_backup_codes(user, count=10):
+        BackupCode.query.filter_by(user_id=user.id).delete()
+        codes = generate_backup_codes(count)
+        for code in codes:
+            db.session.add(BackupCode(user_id=user.id, code_hash=hash_backup_code(code)))
+        return codes
+
+    def consume_backup_code(user, code):
+        backup_codes = BackupCode.query.filter_by(user_id=user.id, used_at=None).all()
+        for backup_code in backup_codes:
+            if verify_backup_code(backup_code.code_hash, code):
+                backup_code.used_at = now_utc()
+                return True
+        return False
+
+    def verify_mfa_or_backup(user, code):
+        if verify_totp(user.mfa_secret, code):
+            return True
+        return consume_backup_code(user, code)
+
+    def requires_second_factor(user):
+        return bool(user.mfa_enabled or user.pem_enabled)
+
+    def verify_pem_factor(user, signature):
+        challenge = session.get('pem_challenge')
+        if not verify_pem_signature(user.pem_public_key, challenge, signature):
+            return False
+
+        session.pop('pem_challenge', None)
+        return True
+
+    def setup_qr_for_user(user):
+        if user.mfa_enabled:
+            return ''
+
+        encrypted_setup_secret = session.get('mfa_setup_secret')
+        setup_secret = decrypt_value(encrypted_setup_secret) if encrypted_setup_secret else generate_totp_secret()
+        session['mfa_setup_secret'] = encrypt_value(setup_secret)
+        return qr_code_data_uri(totp_uri(setup_secret, user.email or user.username))
 
     @app.route('/')
     def index():
@@ -277,9 +349,17 @@ def create_app():
                 'message': 'Usuario, correo o contrasena incorrectos'
             }), 401
 
-        session['user_id'] = user.id
-        session['username'] = user.username
-        session['logged_in'] = True
+        if requires_second_factor(user):
+            session.clear()
+            session['mfa_user_id'] = user.id
+            return jsonify({
+                'success': True,
+                'mfa_required': True,
+                'message': 'Ingresa tu codigo de autenticacion',
+                'redirect': url_for('mfa_verify')
+            }), 200
+
+        finish_login(user)
 
         return jsonify({
             'success': True,
@@ -292,6 +372,276 @@ def create_app():
                 'email': user.email
             }
         }), 200
+
+    @app.route('/mfa/verify')
+    def mfa_verify():
+        """Muestra la verificacion MFA pendiente despues del login."""
+        user_id = session.get('mfa_user_id')
+        if not user_id:
+            return redirect(url_for('login'))
+
+        user = User.query.get(user_id)
+        if not user or not requires_second_factor(user):
+            session.clear()
+            return redirect(url_for('login'))
+
+        pem_challenge = ''
+        if user.pem_enabled:
+            pem_challenge = generate_pem_challenge()
+            session['pem_challenge'] = pem_challenge
+
+        return render_template(
+            'mfa_verify.html',
+            totp_enabled=user.mfa_enabled,
+            pem_enabled=user.pem_enabled,
+            pem_challenge=pem_challenge
+        )
+
+    @app.route('/api/mfa/verify', methods=['POST'])
+    def api_mfa_verify():
+        """Completa el login con TOTP o codigo de respaldo."""
+        user_id = session.get('mfa_user_id')
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'message': 'No hay una verificacion MFA pendiente'
+            }), 401
+
+        data = request.get_json(silent=True) or {}
+        code = data.get('code', '')
+        pem_signature = data.get('pem_signature', '')
+        if not code and not pem_signature:
+            return jsonify({
+                'success': False,
+                'message': 'Ingresa un codigo o firma con tu archivo PEM'
+            }), 400
+
+        user = User.query.get(user_id)
+        if not user or not requires_second_factor(user):
+            session.clear()
+            return jsonify({
+                'success': False,
+                'message': 'La verificacion MFA no es valida'
+            }), 401
+
+        factor_verified = False
+        if code and user.mfa_enabled:
+            factor_verified = verify_mfa_or_backup(user, code)
+        if not factor_verified and pem_signature and user.pem_enabled:
+            factor_verified = verify_pem_factor(user, pem_signature)
+
+        if not factor_verified:
+            db.session.rollback()
+            return jsonify({
+                'success': False,
+                'message': 'Factor de autenticacion incorrecto o ya utilizado'
+            }), 401
+
+        finish_login(user)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Verificacion completada',
+            'redirect': url_for('dashboard')
+        }), 200
+
+    @app.route('/security')
+    def security_settings():
+        """Muestra la configuracion de seguridad del usuario autenticado."""
+        user = get_authenticated_user()
+        if not user:
+            return redirect(url_for('login'))
+
+        return render_template(
+            'security.html',
+            user=user,
+            setup_qr=setup_qr_for_user(user),
+            backup_codes_available=available_backup_codes(user),
+            backup_codes=None,
+            pem_enabled=user.pem_enabled
+        )
+
+    @app.route('/security/mfa/enable', methods=['POST'])
+    def enable_mfa():
+        """Activa Google Authenticator y genera codigos de respaldo."""
+        user = get_authenticated_user()
+        if not user:
+            return redirect(url_for('login'))
+
+        if user.mfa_enabled:
+            return redirect(url_for('security_settings'))
+
+        encrypted_setup_secret = session.get('mfa_setup_secret')
+        setup_secret = decrypt_value(encrypted_setup_secret) if encrypted_setup_secret else ''
+        code = request.form.get('totp_code', '')
+        if not setup_secret or not verify_totp(setup_secret, code):
+            setup_secret = setup_secret or generate_totp_secret()
+            session['mfa_setup_secret'] = encrypt_value(setup_secret)
+            setup_qr = qr_code_data_uri(totp_uri(setup_secret, user.email or user.username))
+            return render_template(
+                'security.html',
+                user=user,
+                setup_qr=setup_qr,
+                backup_codes_available=available_backup_codes(user),
+                backup_codes=None,
+                pem_enabled=user.pem_enabled,
+                error_message='El codigo de Google Authenticator no es valido.'
+            ), 400
+
+        user.mfa_secret = setup_secret
+        user.mfa_enabled = True
+        user.mfa_confirmed_at = now_utc()
+        backup_codes = replace_backup_codes(user)
+        session.pop('mfa_setup_secret', None)
+        db.session.commit()
+
+        return render_template(
+            'security.html',
+            user=user,
+            setup_qr=setup_qr_for_user(user),
+            backup_codes_available=len(backup_codes),
+            backup_codes=backup_codes,
+            pem_enabled=user.pem_enabled,
+            success_message='MFA activado correctamente. Guarda estos codigos de respaldo.'
+        )
+
+    @app.route('/security/pem', methods=['POST'])
+    def save_pem_public_key():
+        """Registra una clave publica PEM para usar archivo privado como factor."""
+        user = get_authenticated_user()
+        if not user:
+            return redirect(url_for('login'))
+
+        password = request.form.get('current_password', '')
+        code = request.form.get('totp_code', '')
+        public_key = request.form.get('public_key', '').strip()
+
+        error_message = None
+        if not check_password_hash(user.password_hash, password):
+            error_message = 'La contrasena actual no es correcta.'
+        elif user.mfa_enabled and not verify_mfa_or_backup(user, code):
+            error_message = 'El codigo MFA no es valido.'
+        elif not validate_public_key_pem(public_key):
+            error_message = 'La clave publica PEM no es valida.'
+
+        if error_message:
+            db.session.rollback()
+            return render_template(
+                'security.html',
+                user=user,
+                setup_qr=setup_qr_for_user(user),
+                backup_codes_available=available_backup_codes(user),
+                backup_codes=None,
+                pem_enabled=user.pem_enabled,
+                error_message=error_message
+            ), 400
+
+        user.pem_public_key = public_key
+        db.session.commit()
+
+        return render_template(
+            'security.html',
+            user=user,
+            setup_qr=setup_qr_for_user(user),
+            backup_codes_available=available_backup_codes(user),
+            backup_codes=None,
+            pem_enabled=True,
+            success_message='Clave publica PEM guardada correctamente.'
+        )
+
+    @app.route('/security/backup-codes/regenerate', methods=['POST'])
+    def regenerate_backup_codes():
+        """Regenera codigos de respaldo tras validar contrasena y MFA."""
+        user = get_authenticated_user()
+        if not user:
+            return redirect(url_for('login'))
+
+        password = request.form.get('current_password', '')
+        code = request.form.get('totp_code', '')
+
+        if not check_password_hash(user.password_hash, password):
+            return render_template(
+                'security.html',
+                user=user,
+                setup_qr=setup_qr_for_user(user),
+                backup_codes_available=available_backup_codes(user),
+                backup_codes=None,
+                pem_enabled=user.pem_enabled,
+                error_message='La contrasena actual no es correcta.'
+            ), 400
+
+        if user.mfa_enabled and not verify_mfa_or_backup(user, code):
+            db.session.rollback()
+            return render_template(
+                'security.html',
+                user=user,
+                setup_qr=setup_qr_for_user(user),
+                backup_codes_available=available_backup_codes(user),
+                backup_codes=None,
+                pem_enabled=user.pem_enabled,
+                error_message='El codigo MFA no es valido.'
+            ), 400
+
+        backup_codes = replace_backup_codes(user)
+        db.session.commit()
+
+        return render_template(
+            'security.html',
+            user=user,
+            setup_qr=setup_qr_for_user(user),
+            backup_codes_available=len(backup_codes),
+            backup_codes=backup_codes,
+            pem_enabled=user.pem_enabled,
+            success_message='Codigos de respaldo regenerados. Los anteriores quedaron invalidados.'
+        )
+
+    @app.route('/security/password', methods=['POST'])
+    def change_password():
+        """Cambia la contrasena tras validar la contrasena actual y MFA."""
+        user = get_authenticated_user()
+        if not user:
+            return redirect(url_for('login'))
+
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        code = request.form.get('totp_code', '')
+
+        error_message = None
+        if not check_password_hash(user.password_hash, current_password):
+            error_message = 'La contrasena actual no es correcta.'
+        elif len(new_password) < 8:
+            error_message = 'La nueva contrasena debe tener al menos 8 caracteres.'
+        elif new_password != confirm_password:
+            error_message = 'Las contrasenas nuevas no coinciden.'
+        elif user.mfa_enabled and not verify_mfa_or_backup(user, code):
+            error_message = 'El codigo MFA no es valido.'
+
+        if error_message:
+            db.session.rollback()
+            return render_template(
+                'security.html',
+                user=user,
+                setup_qr=setup_qr_for_user(user),
+                backup_codes_available=available_backup_codes(user),
+                backup_codes=None,
+                pem_enabled=user.pem_enabled,
+                error_message=error_message
+            ), 400
+
+        user.password_hash = generate_password_hash(new_password)
+        db.session.commit()
+
+        return render_template(
+            'security.html',
+            user=user,
+            setup_qr=setup_qr_for_user(user),
+            backup_codes_available=available_backup_codes(user),
+            backup_codes=None,
+            pem_enabled=user.pem_enabled,
+            success_message='Contrasena actualizada correctamente.'
+        )
 
     @app.route('/api/ia/chat', methods=['POST'])
     def api_ia_chat():

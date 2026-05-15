@@ -9,3 +9,6 @@ Flask-SQLAlchemy
 Flask-Migrate
 PyMySQL
 python-dotenv
+cryptography
+pyotp
+qrcode[pil]

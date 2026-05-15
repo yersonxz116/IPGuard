@@ -314,6 +314,25 @@ body.dashboard-page {
     transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
+.security-textarea {
+    width: 100%;
+    min-height: 170px;
+    padding: 12px 13px;
+    border: 1px solid var(--dash-line);
+    border-radius: 8px;
+    background: rgba(7, 13, 11, 0.88);
+    color: var(--dash-text);
+    outline: none;
+    font: 0.82rem "Consolas", monospace;
+    line-height: 1.45;
+    resize: vertical;
+}
+
+.security-textarea:focus {
+    border-color: var(--dash-line-strong);
+    box-shadow: 0 0 0 3px rgba(0, 168, 107, 0.14);
+}
+
 .field-group input::placeholder {
     color: #72877d;
 }
@@ -563,6 +582,309 @@ body.dashboard-page {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+.security-alert {
+    margin-top: 14px;
+}
+
+.security-panel {
+    border: 1px solid var(--dash-line);
+    border-radius: 8px;
+    padding: 18px;
+    background: var(--dash-surface);
+    box-shadow: var(--dash-shadow);
+}
+
+.security-panel--wide {
+    margin-top: 14px;
+}
+
+.security-status {
+    min-height: 132px;
+}
+
+.mfa-qr-wrap {
+    width: min(100%, 240px);
+    padding: 12px;
+    border: 1px solid var(--dash-line);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.mfa-qr-wrap img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.backup-code-grid {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.backup-code-grid code {
+    min-height: 42px;
+    padding: 0 10px;
+    border: 1px solid var(--dash-line);
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: rgba(7, 13, 11, 0.88);
+    color: var(--dash-text);
+    font: 700 0.92rem "Consolas", monospace;
+    letter-spacing: 0;
+}
+
+/* Security Center - Sidebar + Content Layout */
+.sec-layout {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+}
+
+.sec-nav {
+    position: sticky;
+    top: 18px;
+    border: 1px solid var(--dash-line);
+    border-radius: 8px;
+    padding: 10px;
+    background: var(--dash-surface);
+    box-shadow: var(--dash-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sec-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--dash-muted);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.sec-nav-item i {
+    width: 18px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.sec-nav-item:hover {
+    background: var(--dash-panel-hover);
+    border-color: var(--dash-line);
+    color: var(--dash-text);
+}
+
+.sec-nav-item.is-active {
+    background: rgba(0, 168, 107, 0.1);
+    border-color: rgba(0, 168, 107, 0.25);
+    color: var(--dash-green-strong);
+}
+
+.sec-content {
+    min-width: 0;
+}
+
+.sec-panel {
+    display: none;
+    border: 1px solid var(--dash-line);
+    border-radius: 8px;
+    background: var(--dash-surface);
+    box-shadow: var(--dash-shadow);
+    overflow: hidden;
+}
+
+.sec-panel.is-active {
+    display: block;
+}
+
+.sec-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--dash-line);
+    background: rgba(255, 255, 255, 0.015);
+}
+
+.sec-panel-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 168, 107, 0.1);
+    border: 1px solid rgba(0, 168, 107, 0.2);
+    color: var(--dash-green-strong);
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+
+.sec-panel-header .eyebrow {
+    margin-bottom: 4px;
+}
+
+.sec-panel-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.sec-badge {
+    margin-left: auto;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.sec-badge--active {
+    background: rgba(0, 168, 107, 0.12);
+    border: 1px solid rgba(0, 214, 143, 0.25);
+    color: var(--dash-green-strong);
+}
+
+.sec-badge--inactive {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--dash-line);
+    color: var(--dash-muted);
+}
+
+.sec-panel-body {
+    padding: 22px;
+    display: grid;
+    gap: 18px;
+}
+
+.sec-form {
+    display: grid;
+    gap: 16px;
+}
+
+.sec-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.sec-qr-container {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.sec-stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.sec-stat {
+    padding: 16px;
+    border: 1px solid var(--dash-line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.sec-stat span {
+    display: block;
+    color: var(--dash-muted);
+    font-size: 0.82rem;
+}
+
+.sec-stat strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 1.6rem;
+    color: var(--dash-green-strong);
+}
+
+.sec-generate-btn {
+    width: 100%;
+    padding: 0 16px;
+}
+
+.sec-danger-full {
+    width: 100%;
+}
+
+.security-backup-banner {
+    animation: slideDown 300ms ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 800px) {
+    .sec-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .sec-nav {
+        position: static;
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 2px;
+        padding: 6px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .sec-nav-item {
+        flex-shrink: 0;
+        padding: 10px 14px;
+        white-space: nowrap;
+    }
+
+    .sec-nav-item span {
+        font-size: 0.82rem;
+    }
+
+    .sec-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .sec-panel-header {
+        padding: 16px;
+        flex-wrap: wrap;
+    }
+
+    .sec-badge {
+        margin-left: 0;
+    }
+
+    .sec-panel-body {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .sec-nav-item span {
+        display: none;
+    }
+
+    .sec-nav-item {
+        padding: 10px 12px;
+        justify-content: center;
+    }
+
+    .sec-nav {
+        justify-content: center;
+    }
 }
 
 .is-busy {

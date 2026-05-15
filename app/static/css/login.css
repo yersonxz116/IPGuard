@@ -450,6 +450,158 @@ body.auth-page {
     text-decoration: underline;
 }
 
+/* MFA Method Tabs */
+.mfa-method-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--auth-border);
+    border-radius: var(--auth-radius);
+    background: var(--auth-input-bg);
+    margin-bottom: 0.5rem;
+}
+
+.mfa-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--auth-muted);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.mfa-tab:hover {
+    color: var(--auth-text);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.mfa-tab.is-active {
+    background: rgba(0, 168, 107, 0.1);
+    border-color: rgba(0, 168, 107, 0.25);
+    color: var(--auth-green-light);
+}
+
+.mfa-tab i {
+    font-size: 0.85rem;
+}
+
+.mfa-method-panel {
+    display: none;
+}
+
+.mfa-method-panel.is-active {
+    display: block;
+}
+
+/* PEM Dropzone */
+.pem-dropzone {
+    position: relative;
+    border: 2px dashed var(--auth-border);
+    border-radius: var(--auth-radius);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 200ms ease, background 200ms ease;
+}
+
+.pem-dropzone:hover,
+.pem-dropzone.is-dragover {
+    border-color: var(--auth-border-focus);
+    background: rgba(0, 168, 107, 0.04);
+}
+
+.pem-dropzone-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.pem-dropzone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.pem-dropzone-content i {
+    font-size: 1.8rem;
+    color: var(--auth-green-light);
+    margin-bottom: 4px;
+}
+
+.pem-dropzone-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--auth-text);
+}
+
+.pem-dropzone-hint {
+    font-size: 0.78rem;
+    color: var(--auth-muted);
+}
+
+.pem-dropzone-file {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.pem-dropzone-file[hidden] {
+    display: none;
+}
+
+.pem-dropzone-file i {
+    color: var(--auth-green-light);
+    font-size: 1.1rem;
+}
+
+.pem-dropzone-file span {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--auth-text);
+}
+
+.pem-dropzone-clear {
+    pointer-events: auto;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--auth-border);
+    border-radius: 6px;
+    background: rgba(255, 107, 107, 0.08);
+    color: var(--auth-danger);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: background 160ms ease;
+}
+
+.pem-dropzone-clear:hover {
+    background: rgba(255, 107, 107, 0.18);
+}
+
+.pem-dropzone.has-file {
+    border-style: solid;
+    border-color: rgba(0, 168, 107, 0.3);
+    background: rgba(0, 168, 107, 0.04);
+}
+
 /* Responsive */
 @media (max-width: 900px) {
     .auth-layout {

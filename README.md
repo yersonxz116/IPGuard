@@ -8,6 +8,8 @@ Aplicacion web en Flask para gestion de acceso, autenticacion de usuarios y cons
 - Registro de usuarios con persistencia en MySQL.
 - Login por `username` o `email`.
 - Passwords hasheadas con Werkzeug.
+- Cifrado de datos sensibles recuperables con Fernet.
+- Autenticacion multifactor con Google Authenticator, codigos de respaldo y archivo privado PEM.
 - Migraciones con Flask-Migrate y Alembic.
 - Dashboard autenticado para registrar y visualizar camaras IP.
 - Deteccion de personas en streams de camaras IP con OpenCV y MediaPipe Pose.
@@ -24,6 +26,9 @@ Aplicacion web en Flask para gestion de acceso, autenticacion de usuarios y cons
 - Flask-Migrate
 - MySQL
 - PyMySQL
+- cryptography
+- pyotp
+- qrcode
 - OpenCV
 - MediaPipe
 - Ollama
@@ -90,10 +95,20 @@ Configura `.env` con tus valores reales:
 
 ```env
 SECRET_KEY=pon-aqui-una-clave-segura
+DATA_ENCRYPTION_KEY=clave-fernet-generada-una-sola-vez
 DATABASE_URL=mysql+pymysql://root:tu_password@127.0.0.1:3306/camera_detection_db
 OLLAMA_URL=http://127.0.0.1:11434/api/chat
 OLLAMA_MODEL=gemma3:1b
+MFA_ISSUER_NAME=IPGuard
 ```
+
+Genera `DATA_ENCRYPTION_KEY` una sola vez y conservala fija:
+
+```powershell
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+No cambies `DATA_ENCRYPTION_KEY` despues de cifrar datos, porque los valores ya guardados no se podrian descifrar con una clave distinta.
 
 ## Configurar MySQL desde cero
 
@@ -139,6 +154,85 @@ flask --app main:app db upgrade
 ### No hagas esto en un clon nuevo
 
 No ejecutes `flask db init` en una maquina nueva si la carpeta `migrations/` ya existe en el repositorio.
+
+## Seguridad y autenticacion multifactor
+
+La aplicacion incluye cifrado de datos sensibles y tres alternativas de segundo factor. El usuario puede completar el acceso con cualquiera de estas opciones:
+
+- Google Authenticator: codigo TOTP de 6 digitos.
+- Codigos de respaldo: codigos de un solo uso generados al activar MFA.
+- Archivo privado PEM: archivo local que firma un reto temporal de login.
+
+### Cifrado de datos sensibles
+
+El cifrado recuperable se implementa con `cryptography.Fernet` en `app/security.py`. Los modelos usan propiedades para cifrar al guardar y descifrar al leer.
+
+Campos cifrados:
+
+- `users.full_name`
+- `users.mfa_secret`
+- `users.pem_public_key`
+- `cameras.stream_url`
+- `cameras.snapshot_url`
+- `cameras.location`
+
+Las contrasenas no se cifran: se guardan como hash con Werkzeug. Los codigos de respaldo tampoco se guardan en texto plano: se guardan como hash y se invalidan al usarse.
+
+### Google Authenticator
+
+Desde `/security`, el usuario puede activar MFA escaneando un codigo QR con Google Authenticator o una app TOTP compatible.
+
+Implementacion:
+
+- El servidor genera un secreto TOTP con `pyotp`.
+- El secreto se guarda cifrado en `users.mfa_secret`.
+- En login, despues de usuario y contrasena, se valida el codigo TOTP.
+- Tambien se exige TOTP para operaciones sensibles como cambio de contrasena o regeneracion de codigos de respaldo.
+
+### Codigos de respaldo
+
+Al activar MFA se generan codigos de respaldo de un solo uso.
+
+Implementacion:
+
+- Se muestran una sola vez al usuario.
+- Se guarda solo el hash en la tabla `backup_codes`.
+- Cada codigo queda marcado como usado cuando se utiliza.
+- Los codigos se pueden regenerar desde `/security`; al regenerarlos, los anteriores quedan invalidados.
+
+### Archivo privado PEM
+
+El archivo PEM es una alternativa al codigo TOTP y a los codigos de respaldo. Esta pensado para un flujo similar al uso de claves en servidores, pero adaptado a una app web.
+
+Implementacion:
+
+- En `/security`, el navegador puede generar una llave RSA.
+- La clave publica se registra en la cuenta y se guarda cifrada en `users.pem_public_key`.
+- El archivo privado `ipguard-login-key.pem` se descarga y queda solo en el equipo del usuario.
+- Durante el login, el servidor genera un reto temporal.
+- El navegador firma ese reto con el archivo privado PEM usando WebCrypto.
+- Flask verifica la firma con la clave publica guardada.
+- La clave privada no se envia al servidor.
+
+Notas del formato PEM:
+
+- El archivo privado generado por la app usa formato PKCS#8:
+
+```text
+-----BEGIN PRIVATE KEY-----
+...
+-----END PRIVATE KEY-----
+```
+
+- La clave publica registrada usa formato SPKI:
+
+```text
+-----BEGIN PUBLIC KEY-----
+...
+-----END PUBLIC KEY-----
+```
+
+No se aceptan claves OpenSSH tipo `ssh-rsa ...` ni claves publicas con encabezado `-----BEGIN RSA PUBLIC KEY-----`.
 
 ## Configurar Ollama
 
@@ -208,11 +302,14 @@ ollama pull gemma3:1b
 - `/login` : acceso
 - `/register` : registro de usuario
 - `/dashboard` : vista protegida por sesion
+- `/security` : configuracion de MFA, codigos de respaldo, archivo PEM y cambio de contrasena
+- `/mfa/verify` : verificacion del segundo factor despues del login
 - `/api/cameras` : registrar camara IP
 - `/api/cameras/<id>` : eliminar camara IP
 - `/api/cameras/<id>/processed_stream` : stream MJPEG procesado con OpenCV y MediaPipe
 - `/ia` : chat IA publico
 - `/api/login` : autenticacion JSON
+- `/api/mfa/verify` : verificacion TOTP, codigo de respaldo o firma PEM
 - `/api/ia/chat` : consulta al modelo de Ollama
 
 ## Verificacion manual basica
@@ -229,12 +326,17 @@ Despues de levantar el proyecto, valida:
 8. `/api/cameras/<id>/processed_stream` entrega un MJPEG si la camara y el modelo estan disponibles.
 9. `/ia` abre el chat.
 10. `/api/ia/chat` responde si Ollama esta activo.
+11. `/security` permite activar Google Authenticator y muestra codigos de respaldo.
+12. `/security` permite generar y registrar el archivo PEM.
+13. Con MFA o PEM activo, `/login` redirige a `/mfa/verify`.
+14. `/mfa/verify` permite entrar con Authenticator, codigo de respaldo o archivo PEM si esta registrado.
 
 ## Notas tecnicas
 
 - La app carga variables de entorno desde `.env` con `python-dotenv`.
 - La configuracion vive en `config.py`.
 - La inicializacion de Flask, rutas y endpoint de IA viven en `app/__init__.py`.
+- La logica de cifrado, TOTP, codigos de respaldo y verificacion PEM vive en `app/security.py`.
 - La deteccion con OpenCV y MediaPipe vive en `app/vision.py`.
 - El modelo `User` vive en `app/models.py`.
 
@@ -249,6 +351,7 @@ El repositorio ya ignora:
 - pesos de modelos
 - archivos del editor
 - sesiones y tokens locales
+- archivos privados `.pem`
 
 ## Antes de subir al repo
 

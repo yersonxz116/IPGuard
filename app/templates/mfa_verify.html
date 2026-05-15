@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Verificación multifactor de IPGuard.">
+    <title>IPGuard - Verificacion MFA</title>
+    <link rel="stylesheet" href="{{ asset_url('css/icons.min.css') }}">
+    <link rel="stylesheet" href="{{ asset_url('css/login.css') }}">
+</head>
+<body class="auth-page">
+    <div class="auth-layout">
+        <aside class="auth-panel">
+            <div class="auth-panel-content">
+                <a href="{{ url_for('index') }}" class="auth-logo" aria-label="Volver al inicio">
+                    <img src="{{ asset_url('assets/image/logo.jpeg') }}" alt="IPGuard Logo" width="44" height="44">
+                    <span>IP<span>Guard</span></span>
+                </a>
+                <div class="auth-panel-hero">
+                    <h2>Verificacion protegida</h2>
+                    <p>Confirma tu identidad con uno de los metodos disponibles.</p>
+                </div>
+                <div class="auth-panel-features">
+                    {% if totp_enabled %}
+                    <div class="auth-feature">
+                        <i class="fas fa-shield-halved"></i>
+                        <span>Google Authenticator</span>
+                    </div>
+                    {% endif %}
+                    {% if pem_enabled %}
+                    <div class="auth-feature">
+                        <i class="fas fa-file-shield"></i>
+                        <span>Archivo PEM privado</span>
+                    </div>
+                    {% endif %}
+                    <div class="auth-feature">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Codigo de respaldo</span>
+                    </div>
+                </div>
+            </div>
+            <div class="auth-panel-bg"></div>
+        </aside>
+
+        <main class="auth-main">
+            <section class="auth-card" aria-label="Verificacion multifactor">
+                <div class="auth-card-header">
+                    <h1>Verificacion de identidad</h1>
+                    <p>Elige un metodo para confirmar tu acceso.</p>
+                </div>
+
+                <div class="mfa-method-tabs">
+                    {% if totp_enabled %}
+                    <button class="mfa-tab is-active" data-method="code" type="button">
+                        <i class="fas fa-hashtag"></i>
+                        <span>Codigo</span>
+                    </button>
+                    {% endif %}
+                    {% if pem_enabled %}
+                    <button class="mfa-tab{{ ' is-active' if not totp_enabled else '' }}" data-method="pem" type="button">
+                        <i class="fas fa-file-shield"></i>
+                        <span>Archivo PEM</span>
+                    </button>
+                    {% endif %}
+                </div>
+
+                <form id="mfaForm" class="auth-form" novalidate>
+                    {% if totp_enabled %}
+                    <div class="mfa-method-panel is-active" data-method-panel="code">
+                        <div class="form-group">
+                            <label for="mfaCode">Codigo TOTP o de respaldo</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-key"></i>
+                                <input
+                                    type="text"
+                                    id="mfaCode"
+                                    name="code"
+                                    placeholder="123456 o ABC123-DEF456"
+                                    autocomplete="one-time-code"
+                                >
+                            </div>
+                            <span class="error-message" id="mfaCodeError"></span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if pem_enabled %}
+                    <div class="mfa-method-panel{{ ' is-active' if not totp_enabled else '' }}" data-method-panel="pem">
+                        <div class="form-group">
+                            <label for="pemFile">Archivo privado PEM</label>
+                            <div class="pem-dropzone" id="pemDropzone">
+                                <input
+                                    type="file"
+                                    id="pemFile"
+                                    name="pem_file"
+                                    accept=".pem"
+                                    class="pem-dropzone-input"
+                                >
+                                <div class="pem-dropzone-content" id="pemDropzoneContent">
+                                    <i class="fas fa-cloud-arrow-up"></i>
+                                    <span class="pem-dropzone-title">Arrastra tu archivo .pem aqui</span>
+                                    <span class="pem-dropzone-hint">o haz clic para seleccionarlo</span>
+                                </div>
+                                <div class="pem-dropzone-file" id="pemDropzoneFile" hidden>
+                                    <i class="fas fa-file-shield"></i>
+                                    <span id="pemFileName"></span>
+                                    <button type="button" class="pem-dropzone-clear" id="pemClear" aria-label="Quitar archivo">
+                                        <i class="fas fa-xmark"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <span class="error-message" id="pemFileError"></span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-error">
+                        <i class="fas fa-circle-info"></i>
+                        <span>Esta cuenta no tiene un archivo PEM registrado. Inicia sesion con Authenticator o un codigo de respaldo y configuralo en Seguridad.</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="alert alert-error" id="mfaError" style="display: none;">
+                        <i class="fas fa-triangle-exclamation"></i>
+                        <span id="mfaErrorText"></span>
+                    </div>
+
+                    <button type="submit" class="btn-submit" id="mfaBtn">
+                        <span class="btn-text">Verificar</span>
+                        <span class="btn-loader" style="display: none;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                    </button>
+                </form>
+
+                <div class="auth-switch">
+                    <a href="{{ url_for('logout') }}">Volver al inicio</a>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        window.MFA_CONFIG = {
+            totpEnabled: {{ totp_enabled | tojson }},
+            pemEnabled: {{ pem_enabled | tojson }},
+            pemChallenge: {{ pem_challenge | tojson }}
+        };
+    </script>
+    <script src="{{ asset_url('js/mfa.js') }}" defer></script>
+</body>
+</html>

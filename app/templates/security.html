@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Configuracion de seguridad de IPGuard.">
+    <title>IPGuard - Seguridad</title>
+    <link rel="stylesheet" href="{{ asset_url('css/icons.min.css') }}">
+    <link rel="stylesheet" href="{{ asset_url('css/dashboard.css') }}">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-bg"></div>
+
+    <main class="dashboard-shell">
+        <header class="dashboard-topbar">
+            <div class="dashboard-brand-block">
+                <a href="{{ url_for('dashboard') }}" class="dashboard-brand" aria-label="Volver al dashboard">
+                    <span class="dashboard-brand-mark">IP</span>
+                    <span class="dashboard-brand-text">
+                        <strong>IPGuard</strong>
+                        <small>Seguridad</small>
+                    </span>
+                </a>
+                <div class="dashboard-title-copy">
+                    <p class="eyebrow">Cuenta</p>
+                    <h1>Centro de seguridad</h1>
+                </div>
+            </div>
+
+            <div class="dashboard-userbar">
+                <a href="{{ url_for('dashboard') }}" class="icon-action" title="Dashboard" aria-label="Dashboard">
+                    <i class="fas fa-table-columns"></i>
+                </a>
+                <a href="{{ url_for('logout') }}" class="icon-action icon-action--danger" title="Cerrar sesion" aria-label="Cerrar sesion">
+                    <i class="fas fa-right-from-bracket"></i>
+                </a>
+            </div>
+        </header>
+
+        {% if error_message %}
+        <div class="form-alert is-error security-alert">{{ error_message }}</div>
+        {% endif %}
+        {% if success_message %}
+        <div class="form-alert security-alert">{{ success_message }}</div>
+        {% endif %}
+
+        {% if backup_codes %}
+        <section class="security-panel security-panel--wide security-backup-banner">
+            <div class="section-heading">
+                <p class="eyebrow">Respaldo</p>
+                <h2>Codigos de un solo uso</h2>
+            </div>
+            <div class="form-note">
+                <i class="fas fa-circle-info"></i>
+                <span>Estos codigos solo se muestran una vez. En la base de datos se guardan como hashes y cada codigo queda invalidado despues de usarlo.</span>
+            </div>
+            <div class="backup-code-grid">
+                {% for code in backup_codes %}
+                <code>{{ code }}</code>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <div class="sec-layout">
+            <nav class="sec-nav" aria-label="Secciones de seguridad">
+                <button class="sec-nav-item is-active" data-tab="mfa" type="button">
+                    <i class="fas fa-shield-halved"></i>
+                    <span>MFA</span>
+                </button>
+                <button class="sec-nav-item" data-tab="pem" type="button">
+                    <i class="fas fa-file-shield"></i>
+                    <span>Clave PEM</span>
+                </button>
+                <button class="sec-nav-item" data-tab="password" type="button">
+                    <i class="fas fa-key"></i>
+                    <span>Contrasena</span>
+                </button>
+                {% if user.mfa_enabled %}
+                <button class="sec-nav-item" data-tab="backup" type="button">
+                    <i class="fas fa-rotate"></i>
+                    <span>Codigos</span>
+                </button>
+                {% endif %}
+            </nav>
+
+            <div class="sec-content">
+                <section class="sec-panel is-active" data-panel="mfa">
+                    <div class="sec-panel-header">
+                        <div class="sec-panel-icon">
+                            <i class="fas fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <p class="eyebrow">Google Authenticator</p>
+                            <h2>MFA {{ 'activo' if user.mfa_enabled else 'inactivo' }}</h2>
+                        </div>
+                        {% if user.mfa_enabled %}
+                        <span class="sec-badge sec-badge--active">Activo</span>
+                        {% else %}
+                        <span class="sec-badge sec-badge--inactive">Inactivo</span>
+                        {% endif %}
+                    </div>
+
+                    {% if user.mfa_enabled %}
+                    <div class="sec-panel-body">
+                        <div class="sec-stat-row">
+                            <div class="sec-stat">
+                                <span>Codigos de respaldo disponibles</span>
+                                <strong>{{ backup_codes_available }}</strong>
+                            </div>
+                        </div>
+                        <div class="form-note">
+                            <i class="fas fa-circle-check"></i>
+                            <span>Tu cuenta esta protegida con autenticacion de dos factores.</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="sec-panel-body">
+                        <div class="form-note">
+                            <i class="fas fa-circle-info"></i>
+                            <span>Escanea el codigo QR con Google Authenticator e ingresa el codigo generado para activar MFA.</span>
+                        </div>
+                        <form action="{{ url_for('enable_mfa') }}" method="post" class="sec-form">
+                            <div class="sec-qr-container">
+                                <div class="mfa-qr-wrap">
+                                    <img src="{{ setup_qr }}" alt="Codigo QR para Google Authenticator">
+                                </div>
+                            </div>
+                            <div class="field-group">
+                                <label for="totpCode">Codigo de Google Authenticator</label>
+                                <input id="totpCode" name="totp_code" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" required>
+                            </div>
+                            <button type="submit" class="primary-button">
+                                <span>Activar MFA</span>
+                                <i class="fas fa-shield-halved"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </section>
+
+                <section class="sec-panel" data-panel="pem">
+                    <div class="sec-panel-header">
+                        <div class="sec-panel-icon">
+                            <i class="fas fa-file-shield"></i>
+                        </div>
+                        <div>
+                            <p class="eyebrow">Archivo PEM</p>
+                            <h2>{{ 'Clave registrada' if pem_enabled else 'Registrar clave' }}</h2>
+                        </div>
+                        {% if pem_enabled %}
+                        <span class="sec-badge sec-badge--active">Registrada</span>
+                        {% else %}
+                        <span class="sec-badge sec-badge--inactive">Sin registrar</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="sec-panel-body">
+                        <div class="form-note">
+                            <i class="fas fa-circle-info"></i>
+                            <span>Genera una llave desde aqui. La clave publica se registra en la cuenta y el archivo privado .pem se usa en el login sin enviarlo al servidor.</span>
+                        </div>
+                        <form action="{{ url_for('save_pem_public_key') }}" method="post" class="sec-form">
+                            <button type="button" class="ghost-button sec-generate-btn" id="generatePemKey">
+                                <i class="fas fa-wand-magic-sparkles"></i>
+                                <span>Generar archivo PEM</span>
+                            </button>
+                            <div class="field-group">
+                                <label for="pemPassword">Contrasena actual</label>
+                                <input type="password" id="pemPassword" name="current_password" autocomplete="current-password" required>
+                            </div>
+                            {% if user.mfa_enabled %}
+                            <div class="field-group">
+                                <label for="pemTotp">Codigo MFA o respaldo</label>
+                                <input id="pemTotp" name="totp_code" autocomplete="one-time-code" required>
+                            </div>
+                            {% endif %}
+                            <div class="field-group">
+                                <label for="publicKey">Clave publica PEM</label>
+                                <textarea id="publicKey" name="public_key" class="security-textarea" spellcheck="false" placeholder="-----BEGIN PUBLIC KEY-----" required></textarea>
+                            </div>
+                            <div class="form-alert" id="pemGenerateAlert" hidden></div>
+                            <button type="submit" class="primary-button">
+                                <span>Guardar clave publica</span>
+                                <i class="fas fa-file-shield"></i>
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="sec-panel" data-panel="password">
+                    <div class="sec-panel-header">
+                        <div class="sec-panel-icon">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <div>
+                            <p class="eyebrow">Contrasena</p>
+                            <h2>Cambiar acceso</h2>
+                        </div>
+                    </div>
+
+                    <div class="sec-panel-body">
+                        <form action="{{ url_for('change_password') }}" method="post" class="sec-form">
+                            <div class="field-group">
+                                <label for="currentPassword">Contrasena actual</label>
+                                <input type="password" id="currentPassword" name="current_password" autocomplete="current-password" required>
+                            </div>
+                            <div class="sec-form-row">
+                                <div class="field-group">
+                                    <label for="newPassword">Nueva contrasena</label>
+                                    <input type="password" id="newPassword" name="new_password" autocomplete="new-password" minlength="8" required>
+                                </div>
+                                <div class="field-group">
+                                    <label for="confirmPassword">Confirmar contrasena</label>
+                                    <input type="password" id="confirmPassword" name="confirm_password" autocomplete="new-password" minlength="8" required>
+                                </div>
+                            </div>
+                            {% if user.mfa_enabled %}
+                            <div class="field-group">
+                                <label for="passwordTotp">Codigo MFA o respaldo</label>
+                                <input id="passwordTotp" name="totp_code" autocomplete="one-time-code" required>
+                            </div>
+                            {% endif %}
+                            <button type="submit" class="primary-button">
+                                <span>Actualizar contrasena</span>
+                                <i class="fas fa-key"></i>
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                {% if user.mfa_enabled %}
+                <section class="sec-panel" data-panel="backup">
+                    <div class="sec-panel-header">
+                        <div class="sec-panel-icon">
+                            <i class="fas fa-rotate"></i>
+                        </div>
+                        <div>
+                            <p class="eyebrow">Codigos de respaldo</p>
+                            <h2>Regenerar codigos</h2>
+                        </div>
+                    </div>
+
+                    <div class="sec-panel-body">
+                        <div class="form-note">
+                            <i class="fas fa-triangle-exclamation"></i>
+                            <span>Al regenerar, los codigos anteriores quedan invalidados permanentemente.</span>
+                        </div>
+                        <form action="{{ url_for('regenerate_backup_codes') }}" method="post" class="sec-form">
+                            <div class="field-group">
+                                <label for="backupPassword">Contrasena actual</label>
+                                <input type="password" id="backupPassword" name="current_password" autocomplete="current-password" required>
+                            </div>
+                            <div class="field-group">
+                                <label for="backupTotp">Codigo MFA o respaldo</label>
+                                <input id="backupTotp" name="totp_code" autocomplete="one-time-code" required>
+                            </div>
+                            <button type="submit" class="danger-button sec-danger-full">
+                                <span>Regenerar codigos</span>
+                                <i class="fas fa-rotate"></i>
+                            </button>
+                        </form>
+                    </div>
+                </section>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+    <script src="{{ asset_url('js/security.js') }}" defer></script>
+</body>
+</html>
