@@ -98,6 +98,15 @@ body.dashboard-page {
     box-shadow: 0 0 0 1px rgba(0, 214, 143, 0.18);
 }
 
+.dashboard-brand-logo {
+    width: 46px;
+    height: 46px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid rgba(0, 214, 143, 0.25);
+    box-shadow: 0 0 12px rgba(0, 168, 107, 0.15);
+}
+
 .dashboard-brand-text strong,
 .dashboard-brand-text small {
     display: block;

@@ -34,7 +34,7 @@
                     </div>
                     {% endif %}
                     <div class="auth-feature">
-                        <i class="fas fa-clipboard-list"></i>
+                        <i class="fas fa-list-check"></i>
                         <span>Codigo de respaldo</span>
                     </div>
                 </div>
@@ -52,7 +52,7 @@
                 <div class="mfa-method-tabs">
                     {% if totp_enabled %}
                     <button class="mfa-tab is-active" data-method="code" type="button">
-                        <i class="fas fa-hashtag"></i>
+                        <i class="fas fa-key"></i>
                         <span>Codigo</span>
                     </button>
                     {% endif %}
@@ -97,7 +97,7 @@
                                     class="pem-dropzone-input"
                                 >
                                 <div class="pem-dropzone-content" id="pemDropzoneContent">
-                                    <i class="fas fa-cloud-arrow-up"></i>
+                                    <i class="fas fa-file-shield"></i>
                                     <span class="pem-dropzone-title">Arrastra tu archivo .pem aqui</span>
                                     <span class="pem-dropzone-hint">o haz clic para seleccionarlo</span>
                                 </div>
@@ -105,7 +105,7 @@
                                     <i class="fas fa-file-shield"></i>
                                     <span id="pemFileName"></span>
                                     <button type="button" class="pem-dropzone-clear" id="pemClear" aria-label="Quitar archivo">
-                                        <i class="fas fa-xmark"></i>
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                             </div>

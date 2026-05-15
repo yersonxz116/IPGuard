@@ -6,7 +6,7 @@
     <meta name="description" content="IPGuard Dashboard - Panel de monitoreo de cámaras IP con detección de personas.">
     <title>IPGuard - Dashboard</title>
     <link rel="stylesheet" href="{{ asset_url('css/icons.min.css') }}">
-    <link rel="stylesheet" href="{{ asset_url('css/dashboard.min.css') }}">
+    <link rel="stylesheet" href="{{ asset_url('css/dashboard.css') }}">
 </head>
 <body class="dashboard-page">
     <div class="dashboard-bg"></div>
@@ -15,7 +15,7 @@
         <header class="dashboard-topbar">
             <div class="dashboard-brand-block">
                 <a href="{{ url_for('index') }}" class="dashboard-brand" aria-label="Volver al inicio">
-                    <span class="dashboard-brand-mark">IP</span>
+                    <img src="{{ asset_url('assets/image/logo.jpeg') }}" alt="IPGuard" class="dashboard-brand-logo">
                     <span class="dashboard-brand-text">
                         <strong>IPGuard</strong>
                         <small>Centro de monitoreo</small>
