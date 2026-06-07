@@ -534,6 +534,56 @@ body.dashboard-page {
     overflow: hidden;
 }
 
+/* ── Modo WebSocket ── */
+.ws-stream-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.ws-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ws-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 214, 143, 0.18);
+    border: 1px solid rgba(0, 214, 143, 0.45);
+    color: #00d68f;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+}
+
+.field-group--inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.field-group--inline input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--dash-accent, #3b82f6);
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.field-group--inline label {
+    font-size: 0.8rem;
+    color: var(--dash-text-muted, #94a3b8);
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
 .camera-stream {
     display: block;
     width: 100%;

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>IPGuard — Cámara {{ camera.name }}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #0a0f1a;
+            color: #e2e8f0;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100dvh;
+            padding: 16px;
+            gap: 14px;
+        }
+        h1 { font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.04em; }
+        h1 span { color: #60a5fa; }
+
+        #status {
+            font-size: 0.78rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(59,130,246,0.12);
+            border: 1px solid rgba(59,130,246,0.25);
+            color: #93c5fd;
+        }
+        #status.ok    { background: rgba(0,214,143,0.12); border-color: rgba(0,214,143,0.3); color: #00d68f; }
+        #status.error { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #f87171; }
+
+        video {
+            width: 100%;
+            max-width: 480px;
+            border-radius: 10px;
+            border: 1px solid #1e2d3d;
+            background: #000;
+            transform: scaleX(-1); /* espejo */
+        }
+        canvas { display: none; }
+
+        .stats {
+            font-size: 0.72rem;
+            color: #64748b;
+        }
+
+        button {
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            background: #1e40af;
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        button:active { background: #1d4ed8; }
+        button.danger { background: #991b1b; }
+
+        .tip {
+            font-size: 0.7rem;
+            color: #475569;
+            text-align: center;
+            max-width: 320px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <h1>IPGuard — <span>{{ camera.name }}</span></h1>
+    <div id="status">Iniciando…</div>
+
+    <video id="vid" autoplay playsinline muted></video>
+    <canvas id="cvs"></canvas>
+
+    <div class="stats" id="stats">fps: — | frames: —</div>
+
+    <button id="btnToggle">⏸ Pausar envío</button>
+
+    <p class="tip">Mantén esta pantalla abierta mientras monitoreas.<br>
+    El servidor procesará los frames para detectar personas.</p>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+    (function () {
+        const CAMERA_ID   = {{ camera.id }};
+        const SEND_MS     = 130;   // ~7.5 fps al servidor
+        const JPEG_Q      = 0.72;
+
+        const vid       = document.getElementById('vid');
+        const cvs       = document.getElementById('cvs');
+        const ctx       = cvs.getContext('2d');
+        const statusEl  = document.getElementById('status');
+        const statsEl   = document.getElementById('stats');
+        const btnToggle = document.getElementById('btnToggle');
+
+        let sending   = true;
+        let framesSent = 0;
+        let lastFpsTime = Date.now();
+        let fpsCount  = 0;
+
+        function setStatus(msg, cls) {
+            statusEl.textContent = msg;
+            statusEl.className   = cls || '';
+        }
+
+        // ── WebSocket ─────────────────────────────────────────────────────────
+        const socket = io({ transports: ['websocket'], reconnectionDelay: 2000 });
+
+        socket.on('connect', () => {
+            setStatus('Conectado al servidor ✓', 'ok');
+        });
+        socket.on('disconnect', () => {
+            setStatus('Desconectado — reconectando…', 'error');
+        });
+
+        // ── Cámara con getUserMedia ───────────────────────────────────────────
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
+                    audio: false,
+                });
+                vid.srcObject = stream;
+                await vid.play();
+                setStatus('Cámara activa — enviando frames…', 'ok');
+                sendLoop();
+            } catch (err) {
+                setStatus('Error al acceder a la cámara: ' + err.message, 'error');
+                console.error(err);
+            }
+        }
+
+        // ── Loop de envío ─────────────────────────────────────────────────────
+        function sendLoop() {
+            if (!sending) {
+                setTimeout(sendLoop, 200);
+                return;
+            }
+            if (vid.readyState < 2 || vid.videoWidth === 0) {
+                setTimeout(sendLoop, 100);
+                return;
+            }
+
+            // Ajustar canvas al tamaño real del video
+            if (cvs.width !== vid.videoWidth) {
+                cvs.width  = vid.videoWidth;
+                cvs.height = vid.videoHeight;
+            }
+
+            ctx.drawImage(vid, 0, 0, cvs.width, cvs.height);
+
+            cvs.toBlob((blob) => {
+                if (!blob) return;
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    socket.emit('agent_frame', {
+                        camera_id: CAMERA_ID,
+                        image:     reader.result,
+                    });
+                    framesSent++;
+                    fpsCount++;
+                };
+                reader.readAsDataURL(blob);
+            }, 'image/jpeg', JPEG_Q);
+
+            // Stats cada segundo
+            const now = Date.now();
+            if (now - lastFpsTime >= 1000) {
+                statsEl.textContent = `fps: ${fpsCount} | frames enviados: ${framesSent}`;
+                fpsCount    = 0;
+                lastFpsTime = now;
+            }
+
+            setTimeout(sendLoop, SEND_MS);
+        }
+
+        // ── Toggle ────────────────────────────────────────────────────────────
+        btnToggle.addEventListener('click', () => {
+            sending = !sending;
+            btnToggle.textContent = sending ? '⏸ Pausar envío' : '▶ Reanudar envío';
+            btnToggle.className   = sending ? '' : 'danger';
+            setStatus(sending ? 'Enviando frames…' : 'Envío pausado', sending ? 'ok' : '');
+        });
+
+        // Evitar que la pantalla se apague (Wake Lock)
+        if ('wakeLock' in navigator) {
+            navigator.wakeLock.request('screen').catch(() => {});
+        }
+
+        startCamera();
+    })();
+    </script>
+</body>
+</html>

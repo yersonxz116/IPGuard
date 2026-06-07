@@ -80,7 +80,8 @@ class Camera(db.Model):
     _stream_url = db.Column('stream_url', db.String(1200), nullable=False)
     _snapshot_url = db.Column('snapshot_url', db.String(1200), nullable=True)
     _location = db.Column('location', db.String(500), nullable=True)
-    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    is_active     = db.Column(db.Boolean, nullable=False, default=True)
+    remote_stream = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     user = db.relationship('User', back_populates='cameras')

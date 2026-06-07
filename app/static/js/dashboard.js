@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
             name: (formData.get('name') || '').trim(),
             location: (formData.get('location') || '').trim(),
             stream_url: (formData.get('stream_url') || '').trim(),
-            snapshot_url: (formData.get('snapshot_url') || '').trim()
+            snapshot_url: (formData.get('snapshot_url') || '').trim(),
+            remote_stream: formData.get('remote_stream') === '1',
         };
 
         if (!payload.name || !payload.stream_url) {

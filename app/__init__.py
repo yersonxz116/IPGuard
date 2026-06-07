@@ -50,9 +50,16 @@ def limit_to_two_sentences(text):
 
 def normalize_camera_url(raw_url):
     """Normaliza una URL de camara agregando esquema HTTP si falta."""
+    import re as _re
     candidate = (raw_url or '').strip()
     if not candidate:
         return ''
+
+    # Corrige doble esquema: 'http://http:IP', 'http://https:IP', 'https://http:IP'
+    candidate = _re.sub(r'^(https?://)https?:/?/?', r'\1', candidate)
+
+    # Corrige esquema sin slashes: 'http:192.168...' → 'http://192.168...'
+    candidate = _re.sub(r'^(https?):(?!//)(.)', r'\1://\2', candidate)
 
     if '://' not in candidate:
         candidate = f'http://{candidate}'
@@ -138,6 +145,7 @@ def serialize_camera(camera):
         'detection_available': detection_available,
         'location': camera.location or '',
         'is_active': bool(camera.is_active),
+        'remote_stream': bool(camera.remote_stream),
         'created_at': camera.created_at.isoformat()
     }
 
@@ -803,7 +811,8 @@ def create_app():
             location=location or None,
             stream_url=stream_url,
             snapshot_url=snapshot_url or None,
-            is_active=True
+            is_active=True,
+            remote_stream=bool(data.get('remote_stream', False)),
         )
         db.session.add(camera)
         db.session.commit()
