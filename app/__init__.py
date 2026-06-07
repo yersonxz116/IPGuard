@@ -28,7 +28,8 @@ from .security import (
     verify_pem_signature,
     verify_totp,
 )
-from .vision import generate_processed_stream, is_person_detector_available
+from .vision import generate_camera_stream, get_detection_active, is_person_detector_available, set_detection_active
+from .whatsapp import get_waha_config
 
 
 def limit_to_two_sentences(text):
@@ -121,20 +122,20 @@ def serialize_camera(camera):
         camera.stream_url,
         camera.snapshot_url or ''
     )
-    detection_enabled = preview_mode == 'stream' and is_person_detector_available()
-    detection_stream_url = ''
-    if camera.id and detection_enabled:
-        detection_stream_url = url_for('api_camera_processed_stream', camera_id=camera.id)
+    detection_available = preview_mode == 'stream' and is_person_detector_available()
+    stream_endpoint = ''
+    if camera.id and preview_mode == 'stream':
+        stream_endpoint = url_for('api_camera_stream', camera_id=camera.id)
 
     return {
         'id': camera.id,
         'name': camera.name,
         'stream_url': camera.stream_url,
         'snapshot_url': camera.snapshot_url or '',
-        'preview_url': preview_url,
+        'preview_url': stream_endpoint or preview_url,
         'preview_mode': preview_mode,
-        'detection_stream_url': detection_stream_url,
-        'detection_enabled': detection_enabled,
+        'stream_endpoint': stream_endpoint,
+        'detection_available': detection_available,
         'location': camera.location or '',
         'is_active': bool(camera.is_active),
         'created_at': camera.created_at.isoformat()
@@ -838,14 +839,14 @@ def create_app():
             'message': 'Camara eliminada correctamente'
         }), 200
 
-    @app.route('/api/cameras/<int:camera_id>/processed_stream')
-    def api_camera_processed_stream(camera_id):
-        """Entrega un stream MJPEG procesado con deteccion de personas."""
+    @app.route('/api/cameras/<int:camera_id>/stream')
+    def api_camera_stream(camera_id):
+        """Stream MJPEG unico — aplica deteccion segun flag en memoria."""
         user_id = session.get('user_id')
         if not user_id:
             return jsonify({
                 'success': False,
-                'message': 'Debes iniciar sesion para ver el stream procesado'
+                'message': 'Debes iniciar sesion para ver el stream'
             }), 401
 
         camera = Camera.query.filter_by(id=camera_id, user_id=user_id).first()
@@ -855,16 +856,85 @@ def create_app():
                 'message': 'La camara no existe o no te pertenece'
             }), 404
 
-        if not is_person_detector_available():
-            return jsonify({
-                'success': False,
-                'message': 'OpenCV o MediaPipe no estan instalados en el entorno'
-            }), 503
+        user = User.query.get(user_id)
+        whatsapp_chat_id = ''
+        if user and user.whatsapp_number:
+            number = user.whatsapp_number.strip().lstrip('+')
+            whatsapp_chat_id = f'{number}@c.us'
+
+        waha_cfg = get_waha_config()
 
         return Response(
-            generate_processed_stream(camera.stream_url),
+            generate_camera_stream(
+                camera.stream_url,
+                camera_id=camera_id,
+                camera_name=camera.name,
+                chat_id=whatsapp_chat_id,
+                waha_config=waha_cfg
+            ),
             mimetype='multipart/x-mixed-replace; boundary=frame'
         )
+
+    @app.route('/api/cameras/<int:camera_id>/detection', methods=['POST'])
+    def api_toggle_detection(camera_id):
+        """Activa o desactiva la deteccion para una camara sin cortar el stream."""
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'message': 'No autenticado'}), 401
+
+        camera = Camera.query.filter_by(id=camera_id, user_id=user_id).first()
+        if not camera:
+            return jsonify({'success': False, 'message': 'Camara no encontrada'}), 404
+
+        data = request.get_json(silent=True) or {}
+        active = bool(data.get('active', True))
+        set_detection_active(camera_id, active)
+
+        return jsonify({
+            'success': True,
+            'detection_active': active
+        }), 200
+
+    @app.route('/api/whatsapp', methods=['POST'])
+    def api_save_whatsapp():
+        """Guarda el numero de WhatsApp para notificaciones."""
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({
+                'success': False,
+                'message': 'Debes iniciar sesion'
+            }), 401
+
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'Datos no proporcionados'
+            }), 400
+
+        number = data.get('whatsapp_number', '').strip()
+        if not number:
+            return jsonify({
+                'success': False,
+                'message': 'El numero de WhatsApp es obligatorio'
+            }), 400
+
+        cleaned = number.lstrip('+').replace(' ', '').replace('-', '')
+        if not cleaned.isdigit() or len(cleaned) < 10:
+            return jsonify({
+                'success': False,
+                'message': 'El numero no es valido. Usa formato internacional sin +, ej: 573167821687'
+            }), 400
+
+        user = User.query.get(user_id)
+        user.whatsapp_number = cleaned
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Numero de WhatsApp guardado correctamente',
+            'whatsapp_number': cleaned
+        }), 200
 
     @app.route('/dashboard')
     def dashboard():

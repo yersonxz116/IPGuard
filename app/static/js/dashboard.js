@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const cameraSubmitButton = document.getElementById('cameraSubmitButton');
     const refreshAllButton = document.getElementById('refreshAllButton');
 
+    const whatsappForm = document.getElementById('whatsappForm');
+    const whatsappFormAlert = document.getElementById('whatsappFormAlert');
+    const whatsappSubmitButton = document.getElementById('whatsappSubmitButton');
+
     let cameras = Array.isArray(config.cameras) ? [...config.cameras] : [];
     let snapshotLoopHandle = null;
 
@@ -16,6 +20,38 @@ document.addEventListener('DOMContentLoaded', () => {
     syncEmptyState();
     updateCounters();
     startSnapshotLoop();
+
+    whatsappForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const number = (document.getElementById('whatsappNumber').value || '').trim();
+        if (!number) {
+            showWhatsappAlert('Ingresa un numero de WhatsApp.', true);
+            return;
+        }
+
+        whatsappSubmitButton.disabled = true;
+        showWhatsappAlert('', false, true);
+
+        try {
+            const response = await fetch('/api/whatsapp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ whatsapp_number: number })
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'No se pudo guardar el numero');
+            }
+
+            showWhatsappAlert(data.message || 'Numero guardado.', false);
+        } catch (error) {
+            showWhatsappAlert(error.message, true);
+        } finally {
+            whatsappSubmitButton.disabled = false;
+        }
+    });
 
     cameraForm.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -100,22 +136,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 img.addEventListener('error', () => {
-                    const fallbackSrc = img.dataset.fallbackSrc || '';
-                    const currentBaseUrl = (img.getAttribute('src') || '').split('?')[0];
-                    const fallbackBaseUrl = fallbackSrc.split('?')[0];
-
-                    if (fallbackSrc && fallbackBaseUrl && currentBaseUrl !== fallbackBaseUrl) {
-                        card.dataset.streamReady = 'false';
-                        overlay.hidden = true;
-                        img.src = `${fallbackBaseUrl}?t=${Date.now()}`;
-                        return;
-                    }
-
                     if (previewMode === 'stream') {
                         overlay.hidden = true;
                         return;
                     }
-
                     overlay.hidden = false;
                 });
             }
@@ -179,34 +203,40 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const baseUrl = img.getAttribute('src').split('?')[0];
-        overlay.hidden = true;
-        if (previewMode === 'stream') {
-            card.dataset.streamReady = 'false';
+        if (previewMode === 'snapshot') {
+            const baseUrl = img.getAttribute('src').split('?')[0];
+            overlay.hidden = true;
+            img.src = `${baseUrl}?t=${Date.now()}`;
         }
-        img.src = `${baseUrl}?t=${Date.now()}`;
     }
 
-    function toggleCameraDetection(card) {
-        const img = card.querySelector('.camera-stream');
-        const overlay = card.querySelector('.camera-stream-overlay');
+    async function toggleCameraDetection(card) {
         const detectionAvailable = card.dataset.detectionAvailable === 'true';
         const detectionActive = card.dataset.detectionActive === 'true';
-        if (!img || !detectionAvailable) {
+        if (!detectionAvailable) {
             return;
         }
 
-        const primarySrc = img.dataset.primarySrc || img.getAttribute('src');
-        const fallbackSrc = img.dataset.fallbackSrc || img.getAttribute('src');
-        const nextSrc = detectionActive ? fallbackSrc : primarySrc;
+        const cameraId = card.dataset.cameraId;
+        const newActive = !detectionActive;
 
-        card.dataset.detectionActive = detectionActive ? 'false' : 'true';
-        card.dataset.streamReady = 'false';
-        if (overlay) {
-            overlay.hidden = true;
+        try {
+            const response = await fetch(`${config.deleteBaseEndpoint}/${cameraId}/detection`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: newActive })
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                return;
+            }
+
+            card.dataset.detectionActive = newActive ? 'true' : 'false';
+            syncDetectionUi(card);
+        } catch (error) {
+            // silently fail
         }
-        img.src = `${nextSrc.split('?')[0]}?t=${Date.now()}`;
-        syncDetectionUi(card);
     }
 
     function syncDetectionUi(card) {
@@ -244,9 +274,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = escapeHtml(camera.name);
         const streamUrl = escapeHtml(camera.stream_url);
         const snapshotUrl = escapeHtml(camera.snapshot_url || '');
-        const previewUrl = escapeHtml(camera.detection_stream_url || camera.preview_url || streamUrl);
-        const fallbackUrl = escapeHtml(camera.preview_url || streamUrl);
-        const detectionAvailable = camera.detection_enabled === true;
+        const previewUrl = escapeHtml(camera.preview_url || streamUrl);
+        const detectionAvailable = camera.detection_available === true;
         const streamModeLabel = camera.preview_mode === 'snapshot'
             ? 'Captura estatica'
             : (detectionAvailable ? 'Stream con deteccion' : 'Stream normal');
@@ -297,8 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <img
                         class="camera-stream"
                         src="${previewUrl}"
-                        data-primary-src="${previewUrl}"
-                        data-fallback-src="${fallbackUrl}"
                         alt="Stream de ${name}"
                         loading="eager"
                         referrerpolicy="no-referrer"
@@ -383,6 +410,19 @@ document.addEventListener('DOMContentLoaded', () => {
         cameraFormAlert.hidden = false;
         cameraFormAlert.textContent = message;
         cameraFormAlert.classList.toggle('is-error', Boolean(isError));
+    }
+
+    function showWhatsappAlert(message, isError, hide = false) {
+        if (hide) {
+            whatsappFormAlert.hidden = true;
+            whatsappFormAlert.textContent = '';
+            whatsappFormAlert.classList.remove('is-error');
+            return;
+        }
+
+        whatsappFormAlert.hidden = false;
+        whatsappFormAlert.textContent = message;
+        whatsappFormAlert.classList.toggle('is-error', Boolean(isError));
     }
 
     function escapeHtml(value) {

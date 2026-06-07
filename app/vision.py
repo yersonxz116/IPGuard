@@ -4,6 +4,16 @@ from pathlib import Path
 
 MODEL_PATH = Path(__file__).resolve().parent / 'models' / 'pose_landmarker_full.task'
 
+_detection_active = {}
+
+
+def set_detection_active(camera_id, active):
+    _detection_active[camera_id] = active
+
+
+def get_detection_active(camera_id):
+    return _detection_active.get(camera_id, True)
+
 
 def _load_vision_dependencies():
     """Carga OpenCV y MediaPipe Tasks de forma perezosa."""
@@ -113,8 +123,10 @@ def _encode_status_frame(message):
     return buffer.tobytes()
 
 
-def generate_processed_stream(stream_url):
-    """Genera un stream MJPEG procesado con MediaPipe Pose."""
+def generate_camera_stream(stream_url, camera_id, camera_name='', chat_id='', waha_config=None):
+    """Genera un stream MJPEG. Aplica deteccion solo si el flag esta activo."""
+    from .whatsapp import send_person_detected
+
     dependencies, dependency_error = _load_vision_dependencies()
     if dependency_error or not dependencies:
         error_frame = _encode_status_frame('Instala mediapipe y opencv para usar la deteccion.')
@@ -122,25 +134,19 @@ def generate_processed_stream(stream_url):
             yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + error_frame + b'\r\n'
         return
 
-    if not MODEL_PATH.exists():
-        error_frame = _encode_status_frame('No existe el modelo local de pose_landmarker.')
-        if error_frame:
-            yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + error_frame + b'\r\n'
-        return
-
     cv2 = dependencies['cv2']
+    landmarker = None
 
-    try:
-        landmarker = _build_pose_landmarker(dependencies)
-    except Exception as exc:
-        error_frame = _encode_status_frame(f'No se pudo iniciar MediaPipe: {exc}')
-        if error_frame:
-            yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + error_frame + b'\r\n'
-        return
+    if MODEL_PATH.exists():
+        try:
+            landmarker = _build_pose_landmarker(dependencies)
+        except Exception:
+            landmarker = None
 
     capture = cv2.VideoCapture(stream_url)
     if not capture.isOpened():
-        landmarker.close()
+        if landmarker:
+            landmarker.close()
         error_frame = _encode_status_frame('No se pudo abrir el stream de la camara.')
         if error_frame:
             yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + error_frame + b'\r\n'
@@ -161,19 +167,23 @@ def generate_processed_stream(stream_url):
 
             last_success = time.time()
             timestamp_ms += 33
-            try:
-                annotated_frame, _ = annotate_people_frame(
-                    frame,
-                    dependencies,
-                    landmarker,
-                    timestamp_ms
-                )
-            except Exception:
-                annotated_frame = frame
+            output_frame = frame
+            person_detected = False
+
+            if landmarker and get_detection_active(camera_id):
+                try:
+                    output_frame, person_detected = annotate_people_frame(
+                        frame, dependencies, landmarker, timestamp_ms
+                    )
+                except Exception:
+                    output_frame = frame
+
+                if person_detected and camera_name and chat_id and waha_config:
+                    send_person_detected(camera_name, chat_id, waha_config)
 
             ok, buffer = cv2.imencode(
                 '.jpg',
-                annotated_frame,
+                output_frame,
                 [int(cv2.IMWRITE_JPEG_QUALITY), 82]
             )
             if not ok:
@@ -182,4 +192,5 @@ def generate_processed_stream(stream_url):
             yield b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n'
     finally:
         capture.release()
-        landmarker.close()
+        if landmarker:
+            landmarker.close()

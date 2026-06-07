@@ -17,3 +17,6 @@ class Config:
     OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://127.0.0.1:11434/api/chat')
     OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'gemma3:1b')
     MFA_ISSUER_NAME = os.getenv('MFA_ISSUER_NAME', 'IPGuard')
+    WAHA_API_URL = os.getenv('WAHA_API_URL', '')
+    WAHA_SESSION = os.getenv('WAHA_SESSION', 'default')
+    WAHA_API_KEY = os.getenv('WAHA_API_KEY', '')

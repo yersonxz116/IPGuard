@@ -14,6 +14,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     _mfa_secret = db.Column('mfa_secret', db.String(500), nullable=True)
     _pem_public_key = db.Column('pem_public_key', db.Text, nullable=True)
+    _whatsapp_number = db.Column('whatsapp_number', db.String(500), nullable=True)
     mfa_enabled = db.Column(db.Boolean, nullable=False, default=False)
     mfa_confirmed_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -53,6 +54,14 @@ class User(db.Model):
     @pem_public_key.setter
     def pem_public_key(self, value):
         self._pem_public_key = encrypt_value(value)
+
+    @property
+    def whatsapp_number(self):
+        return decrypt_value(self._whatsapp_number)
+
+    @whatsapp_number.setter
+    def whatsapp_number(self, value):
+        self._whatsapp_number = encrypt_value(value)
 
     @property
     def pem_enabled(self):

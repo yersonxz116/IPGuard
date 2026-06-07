@@ -62,6 +62,40 @@
         <section class="dashboard-grid">
             <aside class="camera-sidebar" aria-label="Agregar camara">
                 <div class="section-heading">
+                    <p class="eyebrow">Notificaciones</p>
+                    <h2>WhatsApp</h2>
+                </div>
+
+                <form id="whatsappForm" class="camera-form" novalidate>
+                    <div class="field-group">
+                        <label for="whatsappNumber">Numero (con codigo de pais)</label>
+                        <input
+                            type="text"
+                            id="whatsappNumber"
+                            name="whatsapp_number"
+                            placeholder="573167821687"
+                            value="{{ user.whatsapp_number or '' }}"
+                            maxlength="20"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-note">
+                        <i class="fas fa-circle-info"></i>
+                        <span>Numero sin + ni espacios. Cuando la deteccion encuentre una persona, recibiras un mensaje a este WhatsApp.</span>
+                    </div>
+
+                    <div class="form-alert" id="whatsappFormAlert" hidden></div>
+
+                    <button type="submit" class="primary-button" id="whatsappSubmitButton">
+                        <span class="button-label">Guardar numero</span>
+                        <i class="fas fa-floppy-disk"></i>
+                    </button>
+                </form>
+
+                <hr class="sidebar-divider">
+
+                <div class="section-heading">
                     <p class="eyebrow">Nueva camara</p>
                     <h2>Registrar stream</h2>
                 </div>
@@ -137,8 +171,8 @@
                     <article
                         class="camera-card"
                         data-camera-id="{{ camera.id }}"
-                        data-detection-available="{{ 'true' if camera.detection_enabled else 'false' }}"
-                        data-detection-active="{{ 'true' if camera.detection_enabled else 'false' }}"
+                        data-detection-available="{{ 'true' if camera.detection_available else 'false' }}"
+                        data-detection-active="true"
                     >
                         <div class="camera-card-header">
                             <div>
@@ -151,9 +185,7 @@
                         <div class="camera-stream-frame" data-preview-mode="{{ camera.preview_mode }}">
                             <img
                                 class="camera-stream"
-                                src="{{ camera.detection_stream_url or camera.preview_url }}"
-                                data-primary-src="{{ camera.detection_stream_url or camera.preview_url }}"
-                                data-fallback-src="{{ camera.preview_url }}"
+                                src="{{ camera.preview_url }}"
                                 alt="Stream de {{ camera.name }}"
                                 loading="eager"
                                 referrerpolicy="no-referrer"
@@ -168,11 +200,11 @@
                             <span><i class="fas fa-network-wired"></i> {{ camera.stream_url }}</span>
                             <span>
                                 <i class="fas fa-arrows-rotate"></i>
-                                <span data-role="stream-mode-label">{{ 'Captura estatica' if camera.preview_mode == 'snapshot' else ('Stream con deteccion' if camera.detection_enabled else 'Stream normal') }}</span>
+                                <span data-role="stream-mode-label">{{ 'Captura estatica' if camera.preview_mode == 'snapshot' else ('Stream con deteccion' if camera.detection_available else 'Stream normal') }}</span>
                             </span>
                             <span>
                                 <i class="fas fa-person-rays"></i>
-                                <span data-role="detection-status-label">{{ 'Deteccion en PC activa' if camera.detection_enabled else 'Deteccion no disponible' }}</span>
+                                <span data-role="detection-status-label">{{ 'Deteccion en PC activa' if camera.detection_available else 'Deteccion no disponible' }}</span>
                             </span>
                             {% if camera.snapshot_url %}
                             <span><i class="fas fa-camera"></i> Captura disponible</span>
@@ -187,10 +219,10 @@
                                 type="button"
                                 class="ghost-button ghost-button--compact"
                                 data-action="toggle-detection"
-                                {% if not camera.detection_enabled %}disabled{% endif %}
+                                {% if not camera.detection_available %}disabled{% endif %}
                             >
                                 <i class="fas fa-person-rays"></i>
-                                <span>{{ 'Desactivar deteccion' if camera.detection_enabled else 'Deteccion no disponible' }}</span>
+                                <span>{{ 'Desactivar deteccion' if camera.detection_available else 'Deteccion no disponible' }}</span>
                             </button>
                             {% endif %}
                             <button type="button" class="ghost-button ghost-button--compact" data-action="refresh">
